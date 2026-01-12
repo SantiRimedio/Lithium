@@ -1,0 +1,19 @@
+
+# macOS
+.DS_Store
+
+# Python virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# JetBrains
+.idea/
+*.iml
+
+# Generated maps
+Data/*visualization*.html
