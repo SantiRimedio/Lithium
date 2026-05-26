@@ -22,3 +22,16 @@ def test_puna_bbox_covers_argentine_puna():
     assert PUNA_BBOX.east >= -66.0
     assert PUNA_BBOX.south <= -26.0
     assert PUNA_BBOX.north >= -23.0
+
+
+def test_puna_basins_loads_endorheic_geojson():
+    from acquisition.aoi import puna_basins
+
+    gdf = puna_basins()
+    assert len(gdf) > 0
+    assert gdf.crs is not None
+    # Basins must intersect the Puna bbox.
+    from acquisition.aoi import PUNA_BBOX
+    minx, miny, maxx, maxy = gdf.total_bounds
+    assert maxx >= PUNA_BBOX.west and minx <= PUNA_BBOX.east
+    assert maxy >= PUNA_BBOX.south and miny <= PUNA_BBOX.north
