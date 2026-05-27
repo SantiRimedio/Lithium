@@ -97,3 +97,39 @@ def test_verify_sha256_mismatch_raises(tmp_path):
     f.write_bytes(b"data")
     with pytest.raises(IntegrityError, match="SHA256"):
         verify_sha256(f, "0" * 64)
+
+
+def test_dump_then_load_roundtrip(tmp_path):
+    from acquisition.manifest import ManifestEntry, dump_manifest, load_manifest
+
+    original = [
+        ManifestEntry(
+            key="usgs", title="t", url="https://x", version="1",
+            license="x", clip_to_puna=False, sha256="abc", size_bytes=42,
+        ),
+    ]
+    path = tmp_path / "m.yaml"
+    dump_manifest(original, path)
+    reread = load_manifest(path)
+    assert reread == original
+
+
+def test_dump_after_mutation_persists_sha(tmp_path):
+    """The driver loads the manifest, mutates entries in place, and dumps.
+    This is the round-trip path that `run.py` relies on."""
+    from acquisition.manifest import ManifestEntry, dump_manifest, load_manifest
+
+    path = tmp_path / "m.yaml"
+    dump_manifest([ManifestEntry(
+        key="usgs", title="t", url="https://x", version="1",
+        license="x", clip_to_puna=False,
+    )], path)
+
+    loaded = load_manifest(path)
+    loaded[0].sha256 = "abc123"
+    loaded[0].size_bytes = 42
+    dump_manifest(loaded, path)
+
+    final = load_manifest(path)
+    assert final[0].sha256 == "abc123"
+    assert final[0].size_bytes == 42

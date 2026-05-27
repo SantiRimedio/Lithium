@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass, fields
+from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 from typing import Any
 
@@ -66,3 +66,9 @@ def verify_sha256(path: Path, expected: str) -> None:
         raise IntegrityError(
             f"SHA256 mismatch for {path}: expected {expected}, got {actual}"
         )
+
+
+def dump_manifest(entries: list[ManifestEntry], path: Path) -> None:
+    """Write entries back to a manifest.yaml, preserving field order."""
+    payload = [asdict(e) for e in entries]
+    path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True))
