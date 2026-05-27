@@ -1,72 +1,94 @@
 - key: usgs
-  title: "USGS Argentine Lithium Geodatabase"
-  url: "https://www.sciencebase.gov/catalog/file/get/5e90cd8f82ce172707edfc74?f=__disk__f3%2F05%2F2a%2Ff3052adc421218ebc09149087234463c8eba50c5"
-  version: "1.0"
-  license: "Public domain (USGS)"
+  title: USGS Argentine Lithium Geodatabase
+  url: https://www.sciencebase.gov/catalog/file/get/5e90cd8f82ce172707edfc74?f=__disk__f3%2F05%2F2a%2Ff3052adc421218ebc09149087234463c8eba50c5
+  version: '1.0'
+  license: Public domain (USGS)
   clip_to_puna: false
-  sha256: ""
-  size_bytes: 0
-  doi: "10.5066/P9RLUH4F"
-  handle: ""
-  notes: |
-    File: Li_Triangle_ARG_MRP_NMIC.gdb.7z (~9.13 MB, 7-zip archive).
+  sha256: 7f25c829c8f28638ec29e38fe59483840e9c084981a46919b87a8cec65aef5a0
+  size_bytes: 9570323
+  doi: 10.5066/P9RLUH4F
+  handle: ''
+  notes: 'File: Li_Triangle_ARG_MRP_NMIC.gdb.7z (~9.13 MB, 7-zip archive).
+
     86 Argentine salars; 44 no-Li are the candidate control set in
+
     Methodology v2 §3.4 (CS-DiD identification). Extracted with `py7zr`
+
     or system `7z` in Stage 1; Stage 0 only stores the .7z.
 
+    '
 - key: izquierdo
-  title: "Izquierdo, Foguet & Grau 2015 — Argentine Puna peatbog polygons"
-  url: ""
-  version: "2015"
-  license: ""
+  title: Izquierdo, Foguet & Grau 2015 — Argentine Puna peatbog polygons
+  url: ''
+  version: '2015'
+  license: ''
   clip_to_puna: false
-  sha256: ""
+  sha256: ''
   size_bytes: 0
-  doi: "10.1007/s11273-015-9433-3"
-  handle: "11336/58267"
-  notes: |
-    Primary bofedal mask per Methodology v2 §3.1. The 2015 Wetlands Ecology
+  doi: 10.1007/s11273-015-9433-3
+  handle: 11336/58267
+  notes: 'Primary bofedal mask per Methodology v2 §3.1. The 2015 Wetlands Ecology
+
     & Mgmt paper describes the polygons (94,427 ha, 10,428 polygons via
+
     supervised Landsat-5 classification) but has no data-availability
+
     section, and the CONICET handle 11336/58267 is unreliable at fetch.
+
     Status (2026-05-27): emailed Andrea Izquierdo <aeizquierdo@gmail.com>
+
     requesting the shapefile / geodatabase. When it arrives, drop it at
+
     Data/external/izquierdo/raw/izquierdo_hydroecosystems.zip and re-run;
+
     the driver detects the existing file and skips fetch.
 
+    '
 - key: wetland2026
-  title: "Global 30 m high-altitude wetland map (2026) — high-probability mask"
-  url: "https://zenodo.org/records/18339573/files/2_Maps_high_probabilities.zip?download=1"
-  version: "v1.0 (Zenodo 18339573)"
-  license: "CC-BY 4.0"
+  title: Global 30 m high-altitude wetland map (2026) — high-probability mask
+  url: https://zenodo.org/records/18339573/files/2_Maps_high_probabilities.zip?download=1
+  version: v1.0 (Zenodo 18339573)
+  license: CC-BY 4.0
   clip_to_puna: false
-  sha256: ""
+  sha256: ''
   size_bytes: 0
-  doi: "10.5281/zenodo.18339573"
-  handle: ""
-  notes: |
-    File: 2_Maps_high_probabilities.zip (~419.5 MB), binarized high-confidence
+  doi: 10.5281/zenodo.18339573
+  handle: ''
+  notes: 'File: 2_Maps_high_probabilities.zip (~419.5 MB), binarized high-confidence
+
     wetland mask. Cross-validation against Izquierdo per Methodology v2 §3.1.
+
     `clip_to_puna: false` because the artifact is a zip; Stage 1 adds zip
+
     extraction + reclip to the Puna bbox. Stage 0 stores the zip only.
 
+    '
 - key: spei
-  title: "SPEIbase v2.11 — global monthly SPEI"
-  url: ""
-  version: "v2.11"
-  license: "CC-BY 4.0 (per spei.csic.es)"
+  title: SPEIbase v2.11 — global monthly SPEI
+  url: ''
+  version: v2.11
+  license: CC-BY 4.0 (per spei.csic.es)
   clip_to_puna: true
-  sha256: ""
+  sha256: ''
   size_bytes: 0
-  doi: ""
-  handle: ""
-  notes: |
-    SPEI-12 and SPEI-24 are the climate covariates in Methodology v2 §3.5.
-    The Methodology v2 spec's previous DOI (10.1038/s41597-024-03047-z) was
+  doi: ''
+  handle: ''
+  notes: 'SPEI-12 and SPEI-24 are the climate covariates in Methodology v2 §3.5.
+
+    The Methodology v2 spec''s previous DOI (10.1038/s41597-024-03047-z) was
+
     incorrect — that DOI is Liu et al. 2024 SPEI-GD (daily, 0.25°, 112 GB),
+
     not the monthly product the methodology specifies. The correct dataset
+
     is SPEIbase v2.11 (Beguería & Vicente-Serrano), 0.5° monthly 1901–2024,
+
     timescales 1–48 months. Resolve the direct NetCDF URLs for spei12.nc
+
     and spei24.nc from https://spei.csic.es/spei_database_2_11/ via browser
-    (the file listing isn't exposed to programmatic fetch). The spec text
+
+    (the file listing isn''t exposed to programmatic fetch). The spec text
+
     needs a corresponding DOI correction; track in a follow-up.
+
+    '
