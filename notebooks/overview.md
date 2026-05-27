@@ -1,3 +1,10 @@
+> **Note (May 2026):** The notebooks listed below implement Methodology v1
+> (MODIS NDVI on H3 hexagons) and are superseded by Methodology v2. New v2
+> work lives under `src/acquisition/` and `notebooks/v2_acquisition.ipynb`.
+> See [text/Methodology_v2.md](../text/Methodology_v2.md) and the Stage 0
+> spec at
+> [docs/superpowers/specs/2026-05-26-stage-0-tier1-acquisition-design.md](../docs/superpowers/specs/2026-05-26-stage-0-tier1-acquisition-design.md).
+
 # Overview over notebooks in this folder
 
 - [Overview over notebooks in this folder](#overview-over-notebooks-in-this-folder)
