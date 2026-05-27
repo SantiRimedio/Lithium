@@ -18,17 +18,17 @@ def _stub_get(content: bytes):
 def test_usgs_fetch_downloads_zip_to_raw(mocker, tmp_path):
     mocker.patch("requests.get", return_value=_stub_get(b"PK\x03\x04fake-zip"))
 
-    ds = UsgsDataset(url="https://example.com/usgs.gdb.zip")
+    ds = UsgsDataset(url="https://example.com/usgs.gdb.7z")
     raw = ds.fetch(tmp_path)
 
-    assert raw == tmp_path / "raw" / "usgs.gdb.zip"
+    assert raw == tmp_path / "raw" / "usgs.gdb.7z"
     assert raw.read_bytes() == b"PK\x03\x04fake-zip"
 
 
 def test_usgs_clip_returns_none(tmp_path):
     """USGS gdb is already regional; clip is a no-op."""
-    ds = UsgsDataset(url="https://example.com/usgs.gdb.zip")
-    fake_raw = tmp_path / "raw" / "usgs.gdb.zip"
+    ds = UsgsDataset(url="https://example.com/usgs.gdb.7z")
+    fake_raw = tmp_path / "raw" / "usgs.gdb.7z"
     fake_raw.parent.mkdir(parents=True)
     fake_raw.write_bytes(b"x")
 
