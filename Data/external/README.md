@@ -29,10 +29,10 @@ four tier-1 datasets specified by Methodology v2 §7.
 ## Running the acquisition
 
 Pull everyone else's existing downloads from Drive (cheap, recommended first
-run):
+run — equivalent to `rclone copy gdrive:Lithium_v2/external Data/external --exclude manifest.yaml --exclude README.md`):
 
 ```bash
-rclone copy gdrive:Lithium_v2/external Data/external --exclude "manifest.yaml" --exclude "README.md"
+uv run python -m acquisition.run --pull-only
 ```
 
 Run the full pipeline (fetch missing artifacts from source, clip, push to Drive):

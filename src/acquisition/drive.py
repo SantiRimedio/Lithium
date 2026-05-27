@@ -45,3 +45,19 @@ class DriveRemote:
         """Return True if the remote object exists. Uses `rclone lsf`."""
         result = self._run(["rclone", "lsf", self._remote_path(relpath)])
         return bool(result.stdout.strip())
+
+    def pull_root(self, local_root: Path) -> None:
+        """Mirror the remote root into local_root.
+
+        Excludes manifest.yaml and README.md (those are committed locally
+        and the remote copy is not authoritative). Used by the
+        ``run --pull-only`` bootstrap path per spec §8.
+        """
+        local_root.mkdir(parents=True, exist_ok=True)
+        self._run([
+            "rclone", "copy",
+            f"{self.remote_name}:{self.root}",
+            str(local_root),
+            "--exclude", "manifest.yaml",
+            "--exclude", "README.md",
+        ])

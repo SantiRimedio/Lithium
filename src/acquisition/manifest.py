@@ -63,8 +63,13 @@ def compute_sha256(path: Path, chunk_size: int = 1 << 20) -> str:
 def verify_sha256(path: Path, expected: str) -> None:
     actual = compute_sha256(path)
     if actual != expected:
+        # Move the bad file aside so the next run's existence check on the
+        # original path misses and triggers a fresh download. Spec §9.
+        bad = path.with_suffix(path.suffix + ".SHA_MISMATCH")
+        path.rename(bad)
         raise IntegrityError(
-            f"SHA256 mismatch for {path}: expected {expected}, got {actual}"
+            f"SHA256 mismatch for {path}: expected {expected}, got {actual}; "
+            f"moved to {bad} so the next run will re-download"
         )
 
 
