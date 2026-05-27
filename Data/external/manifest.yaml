@@ -1,0 +1,60 @@
+- key: usgs
+  title: "USGS Argentine Lithium Geodatabase"
+  url: ""
+  version: "1.0"
+  license: "Public domain (USGS)"
+  clip_to_puna: false
+  sha256: ""
+  size_bytes: 0
+  doi: "10.5066/P9RLUH4F"
+  handle: ""
+  notes: |
+    86 Argentine salars; 44 no-Li are the candidate control set in
+    Methodology v2 §3.4 (CS-DiD identification). Resolve the direct
+    download URL from the ScienceBase landing page for DOI 10.5066/P9RLUH4F
+    and fill `url` before first run.
+
+- key: izquierdo
+  title: "Izquierdo, Foguet & Grau 2016 — Puna hydroecosystem polygons"
+  url: ""
+  version: "2016"
+  license: ""
+  clip_to_puna: false
+  sha256: ""
+  size_bytes: 0
+  doi: ""
+  handle: "11336/58267"
+  notes: |
+    Primary bofedal mask per Methodology v2 §3.1. Resolve the direct download
+    URL from the CONICET handle (11336/58267); fill `license` from the source
+    page. If only a click-through download is available, place the file at
+    Data/external/izquierdo/raw/izquierdo_hydroecosystems.zip and re-run.
+
+- key: wetland2026
+  title: "Global 30 m high-altitude wetland map (2026)"
+  url: ""
+  version: "v1.1"
+  license: ""
+  clip_to_puna: true
+  sha256: ""
+  size_bytes: 0
+  doi: "10.5281/zenodo.18339573"
+  handle: ""
+  notes: |
+    Cross-validation mask vs Izquierdo per Methodology v2 §3.1. Resolve the
+    direct download URL from the Zenodo record. Mountain-wetland layer only;
+    Puna subset produced at clip step.
+
+- key: spei
+  title: "Global SPEI 1982-2021"
+  url: ""
+  version: "2024 release"
+  license: ""
+  clip_to_puna: true
+  sha256: ""
+  size_bytes: 0
+  doi: "10.1038/s41597-024-03047-z"
+  handle: ""
+  notes: |
+    SPEI-12 and SPEI-24 are the climate covariates in Methodology v2 §3.5.
+    Resolve the active SPEIbase URL and confirm license at acquisition time.
