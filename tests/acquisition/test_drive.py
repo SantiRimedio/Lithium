@@ -54,3 +54,20 @@ def test_nonzero_exit_raises_drive_error(mocker, tmp_path):
     f.write_text("x")
     with pytest.raises(DriveError, match="auth failed"):
         remote.push(f, "x")
+
+
+def test_pull_root_invokes_rclone_copy_with_excludes(mocker, tmp_path):
+    run = mocker.patch("subprocess.run", return_value=MagicMock(returncode=0, stdout="", stderr=""))
+    remote = DriveRemote(remote_name="gdrive", root="Lithium_v2/external")
+
+    local_root = tmp_path / "external"
+    remote.pull_root(local_root)
+
+    args = run.call_args[0][0]
+    assert args[0:2] == ["rclone", "copy"]
+    assert "gdrive:Lithium_v2/external" in args
+    assert str(local_root) in args
+    assert "--exclude" in args
+    assert "manifest.yaml" in args
+    assert "README.md" in args
+    assert local_root.exists()

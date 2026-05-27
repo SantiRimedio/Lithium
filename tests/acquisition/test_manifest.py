@@ -97,6 +97,10 @@ def test_verify_sha256_mismatch_raises(tmp_path):
     f.write_bytes(b"data")
     with pytest.raises(IntegrityError, match="SHA256"):
         verify_sha256(f, "0" * 64)
+    # Per spec §9: the offending file is renamed to .SHA_MISMATCH so the
+    # next run's existence check misses and triggers a fresh download.
+    assert not f.exists()
+    assert (tmp_path / "x.bin.SHA_MISMATCH").exists()
 
 
 def test_dump_then_load_roundtrip(tmp_path):

@@ -69,8 +69,19 @@ def run(
     external_root: Path,
     drive: DriveRemote,
     only: Iterable[str] | None = None,
+    pull_only: bool = False,
 ) -> None:
-    """Process all (or a subset of) manifest entries end-to-end."""
+    """Process all (or a subset of) manifest entries end-to-end.
+
+    If ``pull_only=True``, skip upstream fetches and mirror the shared Drive
+    folder into ``external_root`` instead — the team-bootstrap path from
+    spec §8.
+    """
+    if pull_only:
+        print(f"[pull-only] mirroring {drive.remote_name}:{drive.root} → {external_root}", file=sys.stderr)
+        drive.pull_root(external_root)
+        return
+
     entries = load_manifest(manifest_path)
     only_set = set(only) if only else None
 
@@ -97,6 +108,12 @@ def main(argv: list[str] | None = None) -> int:
         "--only",
         help="Comma-separated list of dataset keys to process; default = all",
     )
+    parser.add_argument(
+        "--pull-only",
+        action="store_true",
+        help="Skip upstream fetches; mirror the shared Drive folder into "
+             "external-root (team-bootstrap path, spec §8).",
+    )
     args = parser.parse_args(argv)
 
     only = set(args.only.split(",")) if args.only else None
@@ -107,6 +124,7 @@ def main(argv: list[str] | None = None) -> int:
         external_root=args.external_root,
         drive=drive,
         only=only,
+        pull_only=args.pull_only,
     )
     return 0
 

@@ -70,3 +70,17 @@ def test_run_only_filter_skips_other_keys(mocker, tmp_path, manifest_path):
 
     fake_ds.fetch.assert_not_called()
     drive.push.assert_not_called()
+
+
+def test_run_pull_only_mirrors_drive_and_skips_fetch(mocker, tmp_path, manifest_path):
+    fake_ds = MagicMock()
+    mocker.patch.dict(DATASET_REGISTRY, {"usgs": lambda url: fake_ds}, clear=True)
+    drive = MagicMock()
+
+    external = tmp_path / "external"
+    run(manifest_path=manifest_path, external_root=external,
+        drive=drive, pull_only=True)
+
+    drive.pull_root.assert_called_once_with(external)
+    fake_ds.fetch.assert_not_called()
+    drive.push.assert_not_called()
