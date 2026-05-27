@@ -18,8 +18,11 @@ class UsgsDataset:
     key: str = "usgs"
 
     def fetch(self, dest: Path) -> Path:
+        # ScienceBase distributes the gdb as a 7-zip archive
+        # (Li_Triangle_ARG_MRP_NMIC.gdb.7z). Stage 0 stores it as-is;
+        # Stage 1 extracts via py7zr or system 7z.
         raw_dir = dest / "raw"
-        out = raw_dir / "usgs.gdb.zip"
+        out = raw_dir / "usgs.gdb.7z"
         return http_download(self.url, out)
 
     def clip(self, raw_path: Path, dest: Path, aoi: BBox) -> Path | None:

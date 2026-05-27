@@ -21,8 +21,13 @@ class Wetland2026Dataset:
     key: str = "wetland2026"
 
     def fetch(self, dest: Path) -> Path:
+        # Zenodo 18339573 distributes the mask as a ZIP archive
+        # (2_Maps_high_probabilities.zip). Stage 0 stores the zip;
+        # Stage 1 will extract the inner TIF(s) and reclip to the Puna
+        # bbox. The clip() method below still operates on a TIF — kept
+        # for forward compatibility once extraction lands.
         raw_dir = dest / "raw"
-        out = raw_dir / "wetland2026.tif"
+        out = raw_dir / "wetland2026_high_probabilities.zip"
         return http_download(self.url, out)
 
     def clip(self, raw_path: Path, dest: Path, aoi: BBox) -> Path | None:
