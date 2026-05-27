@@ -70,3 +70,30 @@ def test_load_manifest_rejects_unknown_field(tmp_path):
 """)
     with pytest.raises(ValueError, match="bogus_field"):
         load_manifest(path)
+
+
+def test_compute_sha256_known_value(tmp_path):
+    from acquisition.manifest import compute_sha256
+
+    f = tmp_path / "x.bin"
+    f.write_bytes(b"hello world")
+    # sha256("hello world") = b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9
+    assert compute_sha256(f) == "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
+
+
+def test_verify_sha256_matches(tmp_path):
+    from acquisition.manifest import compute_sha256, verify_sha256
+
+    f = tmp_path / "x.bin"
+    f.write_bytes(b"data")
+    sha = compute_sha256(f)
+    verify_sha256(f, sha)  # no raise
+
+
+def test_verify_sha256_mismatch_raises(tmp_path):
+    from acquisition.manifest import IntegrityError, verify_sha256
+
+    f = tmp_path / "x.bin"
+    f.write_bytes(b"data")
+    with pytest.raises(IntegrityError, match="SHA256"):
+        verify_sha256(f, "0" * 64)
