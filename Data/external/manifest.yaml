@@ -63,32 +63,41 @@
     extraction + reclip to the Puna bbox. Stage 0 stores the zip only.
 
     '
-- key: spei
-  title: SPEIbase v2.11 — global monthly SPEI
+- key: spei12
+  title: SPEIbase v2.11 — global 12-month SPEI
   url: ''
-  version: v2.11
+  version: v2.11.0
   license: CC-BY 4.0 (per spei.csic.es)
   clip_to_puna: true
   sha256: ''
   size_bytes: 0
   doi: ''
   handle: ''
-  notes: 'SPEI-12 and SPEI-24 are the climate covariates in Methodology v2 §3.5.
+  notes: 'SPEI-12 drives conditional parallel trends in Methodology v2 §3.5
+    (CS-DiD). Product: SPEIbase v2.11 (Beguería & Vicente-Serrano),
+    0.5° monthly, 1901–2024, CRU TS 4.09 inputs. File: spei12.nc (~363 MB).
+    URL field intentionally empty: the SPEIbase portal does not expose direct
+    file URLs to programmatic fetch (Anubis-protected). Place the file at
+    Data/external/spei12/raw/spei12.nc and re-run — the driver detects the
+    existing file and skips fetch. The Methodology v2 spec''s previous DOI
+    (10.1038/s41597-024-03047-z, which actually identifies Liu et al. 2024
+    SPEI-GD daily) needs correction in a follow-up.
 
-    The Methodology v2 spec''s previous DOI (10.1038/s41597-024-03047-z) was
-
-    incorrect — that DOI is Liu et al. 2024 SPEI-GD (daily, 0.25°, 112 GB),
-
-    not the monthly product the methodology specifies. The correct dataset
-
-    is SPEIbase v2.11 (Beguería & Vicente-Serrano), 0.5° monthly 1901–2024,
-
-    timescales 1–48 months. Resolve the direct NetCDF URLs for spei12.nc
-
-    and spei24.nc from https://spei.csic.es/spei_database_2_11/ via browser
-
-    (the file listing isn''t exposed to programmatic fetch). The spec text
-
-    needs a corresponding DOI correction; track in a follow-up.
+    '
+- key: spei24
+  title: SPEIbase v2.11 — global 24-month SPEI
+  url: ''
+  version: v2.11.0
+  license: CC-BY 4.0 (per spei.csic.es)
+  clip_to_puna: true
+  sha256: ''
+  size_bytes: 0
+  doi: ''
+  handle: ''
+  notes: 'SPEI-24 drives conditional parallel trends in Methodology v2 §3.5
+    (CS-DiD). Product: SPEIbase v2.11 (Beguería & Vicente-Serrano),
+    0.5° monthly, 1901–2024, CRU TS 4.09 inputs. File: spei24.nc (~360 MB).
+    URL field intentionally empty (see spei12 entry). Place the file at
+    Data/external/spei24/raw/spei24.nc and re-run.
 
     '
