@@ -50,8 +50,8 @@
   version: v1.0 (Zenodo 18339573)
   license: CC-BY 4.0
   clip_to_puna: false
-  sha256: ''
-  size_bytes: 0
+  sha256: 205ded5b5883c1506673621f2c92be59aeceff3f2edf92f638698bd6e8222948
+  size_bytes: 419486482
   doi: 10.5281/zenodo.18339573
   handle: ''
   notes: 'File: 2_Maps_high_probabilities.zip (~419.5 MB), binarized high-confidence
@@ -69,19 +69,18 @@
   version: v2.11.0
   license: CC-BY 4.0 (per spei.csic.es)
   clip_to_puna: true
-  sha256: ''
-  size_bytes: 0
+  sha256: 0a1709e6df50e6e6aa80709affc08d10f6a6765dde1c0a0ffe72d71a4c34cfe1
+  size_bytes: 380954035
   doi: ''
   handle: ''
-  notes: 'SPEI-12 drives conditional parallel trends in Methodology v2 §3.5
-    (CS-DiD). Product: SPEIbase v2.11 (Beguería & Vicente-Serrano),
-    0.5° monthly, 1901–2024, CRU TS 4.09 inputs. File: spei12.nc (~363 MB).
-    URL field intentionally empty: the SPEIbase portal does not expose direct
-    file URLs to programmatic fetch (Anubis-protected). Place the file at
-    Data/external/spei12/raw/spei12.nc and re-run — the driver detects the
-    existing file and skips fetch. The Methodology v2 spec''s previous DOI
-    (10.1038/s41597-024-03047-z, which actually identifies Liu et al. 2024
-    SPEI-GD daily) needs correction in a follow-up.
+  notes: 'SPEI-12 drives conditional parallel trends in Methodology v2 §3.5 (CS-DiD).
+    Product: SPEIbase v2.11 (Beguería & Vicente-Serrano), 0.5° monthly, 1901–2024,
+    CRU TS 4.09 inputs. File: spei12.nc (~363 MB). URL field intentionally empty:
+    the SPEIbase portal does not expose direct file URLs to programmatic fetch (Anubis-protected).
+    Place the file at Data/external/spei12/raw/spei12.nc and re-run — the driver detects
+    the existing file and skips fetch. The Methodology v2 spec''s previous DOI (10.1038/s41597-024-03047-z,
+    which actually identifies Liu et al. 2024 SPEI-GD daily) needs correction in a
+    follow-up.
 
     '
 - key: spei24
@@ -90,14 +89,13 @@
   version: v2.11.0
   license: CC-BY 4.0 (per spei.csic.es)
   clip_to_puna: true
-  sha256: ''
-  size_bytes: 0
+  sha256: 00f1248f114305117c4f7f4bcffdc216b7e233032bc0b3b5034e2b7f8f9963f5
+  size_bytes: 377732664
   doi: ''
   handle: ''
-  notes: 'SPEI-24 drives conditional parallel trends in Methodology v2 §3.5
-    (CS-DiD). Product: SPEIbase v2.11 (Beguería & Vicente-Serrano),
-    0.5° monthly, 1901–2024, CRU TS 4.09 inputs. File: spei24.nc (~360 MB).
-    URL field intentionally empty (see spei12 entry). Place the file at
-    Data/external/spei24/raw/spei24.nc and re-run.
+  notes: 'SPEI-24 drives conditional parallel trends in Methodology v2 §3.5 (CS-DiD).
+    Product: SPEIbase v2.11 (Beguería & Vicente-Serrano), 0.5° monthly, 1901–2024,
+    CRU TS 4.09 inputs. File: spei24.nc (~360 MB). URL field intentionally empty (see
+    spei12 entry). Place the file at Data/external/spei24/raw/spei24.nc and re-run.
 
     '
