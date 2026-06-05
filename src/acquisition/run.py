@@ -26,7 +26,15 @@ DATASET_REGISTRY: dict[str, Callable[[str], Dataset]] = {
     "usgs": lambda url: UsgsDataset(url=url),
     "izquierdo": lambda url: IzquierdoDataset(url=url),
     "wetland2026": lambda url: Wetland2026Dataset(url=url),
-    "spei": lambda url: SpeiDataset(url=url),
+    # SPEIbase distributes one NetCDF per timescale; one manifest entry each.
+    "spei12": lambda url: SpeiDataset(
+        url=url, key="spei12",
+        filename="spei12.nc", clipped_filename="spei12_puna.nc",
+    ),
+    "spei24": lambda url: SpeiDataset(
+        url=url, key="spei24",
+        filename="spei24.nc", clipped_filename="spei24_puna.nc",
+    ),
 }
 
 
