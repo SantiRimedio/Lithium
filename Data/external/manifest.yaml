@@ -18,7 +18,7 @@
 
     '
 - key: izquierdo
-  title: Izquierdo, Foguet & Grau 2015 — Argentine Puna peatbog polygons
+  title: Izquierdo, Foguet & Grau 2015 — Argentine Puna peatbog polygons (DEPRECATED)
   url: ''
   version: '2015'
   license: ''
@@ -27,21 +27,18 @@
   size_bytes: 0
   doi: 10.1007/s11273-015-9433-3
   handle: 11336/58267
-  notes: 'Primary bofedal mask per Methodology v2 §3.1. The 2015 Wetlands Ecology
-
-    & Mgmt paper describes the polygons (94,427 ha, 10,428 polygons via
-
-    supervised Landsat-5 classification) but has no data-availability
-
-    section, and the CONICET handle 11336/58267 is unreliable at fetch.
-
-    Status (2026-05-27): emailed Andrea Izquierdo <aeizquierdo@gmail.com>
-
-    requesting the shapefile / geodatabase. When it arrives, drop it at
-
-    Data/external/izquierdo/raw/izquierdo_hydroecosystems.zip and re-run;
-
-    the driver detects the existing file and skips fetch.
+  notes: 'DEPRECATED 2026-06-05. The 2015 Wetlands Ecology & Mgmt paper has no
+    data-availability section, the CONICET handle 11336/58267 is unreliable, and
+    the corresponding author did not respond to a data request. The bofedal-mask
+    role originally assigned to Izquierdo in Methodology v2 §3.1 is reassigned
+    to a HYBRID: MapBiomas Argentina Coll. 2 (Puna y Altos Andes) wetland class
+    as primary, polygonized via the Izquierdo-style sieve+clump+aggregate-300m
+    post-process; Zenodo 18339573 high-probability mask as cross-validation.
+    MapBiomas acquisition (GEE-mediated) is scope for the next implementation
+    pass and pulls tier-2 GEE infrastructure work forward. Methodology v2 §3.1
+    text needs a corresponding rewrite (track in a follow-up spec commit).
+    Entry retained for historical traceability; the IzquierdoDataset module and
+    its tests remain in the codebase pending a cleanup pass.
 
     '
 - key: wetland2026
