@@ -104,3 +104,40 @@ def aggregate_300m(gdf: gpd.GeoDataFrame, *, distance_m: float = 300.0) -> gpd.G
         crs=_METRIC_CRS,
     )
     return out.to_crs(input_crs)
+
+
+def reconcile(
+    primary: gpd.GeoDataFrame,
+    reference: gpd.GeoDataFrame,
+    *,
+    accept_threshold: float = 0.50,
+    dispute_threshold: float = 0.10,
+) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    """Classify primary polygons by their area-weighted overlap with reference.
+
+    Returns (accepted, disputed). Polygons with overlap < dispute_threshold are
+    dropped (not returned).
+    """
+    if primary.crs != reference.crs:
+        reference = reference.to_crs(primary.crs)
+
+    ref_tree = STRtree(list(reference.geometry))
+    overlaps = []
+    for prim in primary.geometry:
+        total_overlap_area = 0.0
+        for j in ref_tree.query(prim):
+            ref_geom = reference.geometry.iloc[j]
+            if prim.intersects(ref_geom):
+                total_overlap_area += prim.intersection(ref_geom).area
+        ratio = total_overlap_area / prim.area if prim.area > 0 else 0.0
+        overlaps.append(ratio)
+
+    out = primary.copy()
+    out["overlap_with_reference"] = overlaps
+
+    accepted = out[out["overlap_with_reference"] >= accept_threshold].copy()
+    disputed = out[
+        (out["overlap_with_reference"] >= dispute_threshold)
+        & (out["overlap_with_reference"] < accept_threshold)
+    ].copy()
+    return accepted, disputed

@@ -97,3 +97,45 @@ def test_aggregate_300m_keeps_far_polygons_separate():
 
     merged = aggregate_300m(gdf, distance_m=300.0)
     assert len(merged) == 2
+
+
+def test_reconcile_classifies_overlap_buckets():
+    import geopandas as gpd
+    from shapely.geometry import Polygon
+    from acquisition.bofedal_mask import reconcile
+
+    # Primary polygons, each 1 unit x 1 unit (in degrees, conceptually).
+    p_accept = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
+    p_disputed = Polygon([(2, 0), (3, 0), (3, 1), (2, 1)])
+    p_dropped = Polygon([(4, 0), (5, 0), (5, 1), (4, 1)])
+
+    # Reference polygons:
+    # - 80% overlap with p_accept
+    # - 25% overlap with p_disputed
+    # - 5% overlap with p_dropped
+    r_for_accept = Polygon([(0, 0), (0.8, 0), (0.8, 1), (0, 1)])
+    r_for_disputed = Polygon([(2, 0), (2.25, 0), (2.25, 1), (2, 1)])
+    r_for_dropped = Polygon([(4, 0), (4.05, 0), (4.05, 1), (4, 1)])
+
+    primary = gpd.GeoDataFrame(
+        {"raster_value": [1, 1, 1], "geometry": [p_accept, p_disputed, p_dropped]},
+        crs="EPSG:32719",
+    )
+    reference = gpd.GeoDataFrame(
+        {"raster_value": [1, 1, 1],
+         "geometry": [r_for_accept, r_for_disputed, r_for_dropped]},
+        crs="EPSG:32719",
+    )
+
+    accepted, disputed = reconcile(
+        primary, reference, accept_threshold=0.50, dispute_threshold=0.10,
+    )
+
+    # accepted: only p_accept (0.8 >= 0.5)
+    assert len(accepted) == 1
+    assert "overlap_with_reference" in accepted.columns
+    assert abs(accepted["overlap_with_reference"].iloc[0] - 0.80) < 1e-6
+
+    # disputed: only p_disputed (0.10 <= 0.25 < 0.50)
+    assert len(disputed) == 1
+    assert abs(disputed["overlap_with_reference"].iloc[0] - 0.25) < 1e-6
