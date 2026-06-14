@@ -9,6 +9,7 @@ from typing import Callable, Iterable
 from acquisition.aoi import PUNA_BBOX
 from acquisition.datasets._base import Dataset
 from acquisition.datasets.izquierdo import IzquierdoDataset
+from acquisition.datasets.mapbiomas import MapbiomasDataset
 from acquisition.datasets.spei import SpeiDataset
 from acquisition.datasets.usgs import UsgsDataset
 from acquisition.datasets.wetland2026 import Wetland2026Dataset
@@ -35,6 +36,8 @@ DATASET_REGISTRY: dict[str, Callable[[str], Dataset]] = {
         url=url, key="spei24",
         filename="spei24.nc", clipped_filename="spei24_puna.nc",
     ),
+    # MapBiomas's "url" field is repurposed as the GEE asset ID.
+    "mapbiomas": lambda url: MapbiomasDataset(asset_id=url),
 }
 
 
@@ -106,6 +109,43 @@ def run(
         print("manifest updated with new SHA/size — commit it", file=sys.stderr)
 
 
+def run_build_mask(*, external_root: Path, repo_root: Path) -> None:
+    """Run the polygonization + reconciliation step.
+
+    Inputs: the latest MapBiomas raster (under external/mapbiomas/raw/) and
+    the Puna-extracted Zenodo TIF (under external/wetland2026/puna/).
+    Outputs: Data/bofedales_v2.geojson + Data/bofedales_v2_disputed.geojson.
+    """
+    from acquisition import bofedal_mask
+
+    primary_dir = external_root / "mapbiomas" / "raw"
+    primary_candidates = sorted(primary_dir.glob("*.tif"))
+    if not primary_candidates:
+        raise FileNotFoundError(
+            f"MapBiomas raster not found in {primary_dir}. Run "
+            "`python -m acquisition.run --only mapbiomas` first."
+        )
+    primary = primary_candidates[0]
+
+    reference = external_root / "wetland2026" / "puna" / "wetland_puna.tif"
+    if not reference.exists():
+        raise FileNotFoundError(
+            f"Zenodo Puna TIF not found at {reference}. Call "
+            "Wetland2026Dataset.extract_puna_tif first."
+        )
+
+    accepted_out = repo_root / "Data" / "bofedales_v2.geojson"
+    disputed_out = repo_root / "Data" / "bofedales_v2_disputed.geojson"
+
+    bofedal_mask.build_mask(
+        primary_raster=primary,
+        reference_raster=reference,
+        accepted_out=accepted_out,
+        disputed_out=disputed_out,
+    )
+    print(f"wrote {accepted_out} and {disputed_out}", file=sys.stderr)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="acquisition.run")
     parser.add_argument("--manifest", type=Path, default=Path("Data/external/manifest.yaml"))
@@ -122,18 +162,31 @@ def main(argv: list[str] | None = None) -> int:
         help="Skip upstream fetches; mirror the shared Drive folder into "
              "external-root (team-bootstrap path, spec §8).",
     )
+    parser.add_argument(
+        "--build-mask",
+        action="store_true",
+        help="After (or instead of) acquisition, run the bofedal_mask pipeline "
+             "and emit Data/bofedales_v2.geojson + disputed companion.",
+    )
     args = parser.parse_args(argv)
 
     only = set(args.only.split(",")) if args.only else None
     drive = DriveRemote(remote_name=args.remote_name, root=args.remote_root)
+    repo_root = Path.cwd()
 
-    run(
-        manifest_path=args.manifest,
-        external_root=args.external_root,
-        drive=drive,
-        only=only,
-        pull_only=args.pull_only,
-    )
+    # If --only or --pull-only is set (or neither --only nor --build-mask), run acquisition.
+    if args.pull_only or args.only or not args.build_mask:
+        run(
+            manifest_path=args.manifest,
+            external_root=args.external_root,
+            drive=drive,
+            only=only,
+            pull_only=args.pull_only,
+        )
+
+    if args.build_mask:
+        run_build_mask(external_root=args.external_root, repo_root=repo_root)
+
     return 0
 
 

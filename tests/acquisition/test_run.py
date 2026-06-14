@@ -84,3 +84,41 @@ def test_run_pull_only_mirrors_drive_and_skips_fetch(mocker, tmp_path, manifest_
     drive.pull_root.assert_called_once_with(external)
     fake_ds.fetch.assert_not_called()
     drive.push.assert_not_called()
+
+
+def test_run_build_mask_invokes_pipeline(mocker, tmp_path):
+    from acquisition.run import run_build_mask
+
+    build = mocker.patch("acquisition.bofedal_mask.build_mask")
+
+    primary = tmp_path / "mapbiomas" / "raw" / "bofedal_stable.tif"
+    reference = tmp_path / "wetland2026" / "puna" / "wetland_puna.tif"
+    primary.parent.mkdir(parents=True)
+    reference.parent.mkdir(parents=True)
+    primary.touch()
+    reference.touch()
+
+    run_build_mask(
+        external_root=tmp_path,
+        repo_root=tmp_path / "_repo",
+    )
+
+    build.assert_called_once()
+    kw = build.call_args.kwargs or {}
+    # Normalize args/kwargs into a single dict.
+    args = build.call_args.args
+    all_args = {"primary_raster": args[0] if args else kw.get("primary_raster"),
+                "reference_raster": args[1] if len(args) > 1 else kw.get("reference_raster"),
+                "accepted_out": args[2] if len(args) > 2 else kw.get("accepted_out"),
+                "disputed_out": args[3] if len(args) > 3 else kw.get("disputed_out")}
+    assert all_args["primary_raster"] == primary
+    assert all_args["reference_raster"] == reference
+    assert all_args["accepted_out"] == tmp_path / "_repo" / "Data" / "bofedales_v2.geojson"
+    assert all_args["disputed_out"] == tmp_path / "_repo" / "Data" / "bofedales_v2_disputed.geojson"
+
+
+def test_run_build_mask_requires_inputs(tmp_path):
+    from acquisition.run import run_build_mask
+
+    with pytest.raises(FileNotFoundError, match="MapBiomas raster"):
+        run_build_mask(external_root=tmp_path, repo_root=tmp_path / "_repo")
