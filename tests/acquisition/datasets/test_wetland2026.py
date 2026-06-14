@@ -56,3 +56,25 @@ def test_wetland_clip_idempotent(tiny_geotiff, tmp_path):
     out2 = ds.clip(tiny_geotiff, tmp_path, PUNA_BBOX)
     assert out2 == out1
     assert out2.stat().st_mtime_ns == mtime1  # not rewritten
+
+
+def test_extract_puna_tif_filters_outside_tifs(tiny_zip_with_tifs, tmp_path):
+    """Only TIFs whose bbox intersects PUNA_BBOX are mosaicked into the output."""
+    ds = Wetland2026Dataset(url="https://example.com/wetland.zip")
+    out = ds.extract_puna_tif(tiny_zip_with_tifs, tmp_path)
+
+    assert out == tmp_path / "puna" / "wetland_puna.tif"
+    assert out.exists()
+    with rasterio.open(out) as src:
+        # Bounds should match the "inside.tif" (Puna-overlapping fixture).
+        assert src.bounds.left >= -68.0 and src.bounds.right <= -66.0
+        assert src.bounds.bottom >= -26.0 and src.bounds.top <= -24.0
+
+
+def test_extract_puna_tif_idempotent(tiny_zip_with_tifs, tmp_path):
+    ds = Wetland2026Dataset(url="https://example.com/wetland.zip")
+    out1 = ds.extract_puna_tif(tiny_zip_with_tifs, tmp_path)
+    mtime1 = out1.stat().st_mtime_ns
+    out2 = ds.extract_puna_tif(tiny_zip_with_tifs, tmp_path)
+    assert out2 == out1
+    assert out2.stat().st_mtime_ns == mtime1
