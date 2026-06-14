@@ -14,9 +14,17 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import geopandas as gpd
+import numpy as np
 import rasterio
 from rasterio.features import shapes as rio_shapes, sieve
+from scipy.sparse import lil_matrix
+from scipy.sparse.csgraph import connected_components
 from shapely.geometry import shape
+from shapely.ops import unary_union
+from shapely.strtree import STRtree
+
+
+_METRIC_CRS = "EPSG:32719"  # UTM Zone 19S, covers Argentine Puna
 
 
 @dataclass(frozen=True)
@@ -55,3 +63,44 @@ def polygonize(raster_path: Path) -> gpd.GeoDataFrame:
         {"raster_value": values, "geometry": geoms},
         crs=crs,
     )
+
+
+def aggregate_300m(gdf: gpd.GeoDataFrame, *, distance_m: float = 300.0) -> gpd.GeoDataFrame:
+    """Merge polygons whose nearest-point distance is < distance_m.
+
+    Algorithm: buffer each polygon by distance/2 in a metric CRS, build a
+    spatial graph of pairwise intersections of the buffers, find connected
+    components, and dissolve the ORIGINAL (un-buffered) polygons in each
+    component. Returns a GeoDataFrame in the input CRS.
+    """
+    if len(gdf) == 0:
+        return gdf.copy()
+
+    input_crs = gdf.crs
+    metric = gdf.to_crs(_METRIC_CRS)
+    buffered = metric.geometry.buffer(distance_m / 2.0)
+
+    tree = STRtree(list(buffered))
+    n = len(buffered)
+    adj = lil_matrix((n, n), dtype=bool)
+    for i, geom in enumerate(buffered):
+        for j in tree.query(geom):
+            if i == j:
+                continue
+            if buffered.iloc[i].intersects(buffered.iloc[j]):
+                adj[i, j] = True
+                adj[j, i] = True
+
+    n_components, labels = connected_components(adj.tocsr(), directed=False)
+
+    dissolved_geoms = []
+    for comp_id in range(n_components):
+        idxs = np.where(labels == comp_id)[0]
+        comp_geoms = [metric.geometry.iloc[i] for i in idxs]
+        dissolved_geoms.append(unary_union(comp_geoms))
+
+    out = gpd.GeoDataFrame(
+        {"raster_value": [1] * len(dissolved_geoms), "geometry": dissolved_geoms},
+        crs=_METRIC_CRS,
+    )
+    return out.to_crs(input_crs)

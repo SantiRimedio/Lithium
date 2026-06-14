@@ -57,3 +57,43 @@ def test_polygonize_skips_zero_class(tiny_binary_raster):
     gdf = polygonize(tiny_binary_raster)
     # All polygons should have raster_value == 1.
     assert (gdf["raster_value"] == 1).all()
+
+
+def test_aggregate_300m_merges_close_polygons():
+    """Two polygons whose nearest points are < 300 m apart get merged."""
+    import geopandas as gpd
+    from shapely.geometry import Polygon
+    from acquisition.bofedal_mask import aggregate_300m
+
+    # Two squares in degree-space, ~100 m apart (well within 300 m).
+    # ~0.001 deg ≈ 111 m at this latitude.
+    a = Polygon([(-67.000, -24.000), (-66.999, -24.000),
+                 (-66.999, -23.999), (-67.000, -23.999)])
+    b = Polygon([(-66.998, -24.000), (-66.997, -24.000),
+                 (-66.997, -23.999), (-66.998, -23.999)])
+    far = Polygon([(-66.500, -24.000), (-66.499, -24.000),
+                   (-66.499, -23.999), (-66.500, -23.999)])
+    gdf = gpd.GeoDataFrame({"raster_value": [1, 1, 1], "geometry": [a, b, far]},
+                           crs="EPSG:4326")
+
+    merged = aggregate_300m(gdf, distance_m=300.0)
+
+    # a + b merged into one feature; far stays separate.
+    assert len(merged) == 2
+
+
+def test_aggregate_300m_keeps_far_polygons_separate():
+    import geopandas as gpd
+    from shapely.geometry import Polygon
+    from acquisition.bofedal_mask import aggregate_300m
+
+    # Two squares ~5 km apart.
+    a = Polygon([(-67.05, -24.0), (-67.04, -24.0),
+                 (-67.04, -23.99), (-67.05, -23.99)])
+    b = Polygon([(-67.00, -24.0), (-66.99, -24.0),
+                 (-66.99, -23.99), (-67.00, -23.99)])
+    gdf = gpd.GeoDataFrame({"raster_value": [1, 1], "geometry": [a, b]},
+                           crs="EPSG:4326")
+
+    merged = aggregate_300m(gdf, distance_m=300.0)
+    assert len(merged) == 2
