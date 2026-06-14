@@ -139,3 +139,50 @@ def test_reconcile_classifies_overlap_buckets():
     # disputed: only p_disputed (0.10 <= 0.25 < 0.50)
     assert len(disputed) == 1
     assert abs(disputed["overlap_with_reference"].iloc[0] - 0.25) < 1e-6
+
+
+def test_build_mask_end_to_end_writes_two_geojsons(tiny_binary_raster, tmp_path):
+    """Same raster as primary and reference → all polygons accepted, no disputed."""
+    from acquisition.bofedal_mask import BofedalMaskConfig, build_mask
+
+    accepted_path = tmp_path / "bofedales_v2.geojson"
+    disputed_path = tmp_path / "bofedales_v2_disputed.geojson"
+
+    build_mask(
+        primary_raster=tiny_binary_raster,
+        reference_raster=tiny_binary_raster,
+        accepted_out=accepted_path,
+        disputed_out=disputed_path,
+        config=BofedalMaskConfig(min_pixels=1, min_area_m2=0.0),  # don't filter the tiny test blob
+    )
+
+    assert accepted_path.exists()
+    assert disputed_path.exists()
+
+    import geopandas as gpd
+    accepted = gpd.read_file(accepted_path)
+    disputed = gpd.read_file(disputed_path)
+    assert len(accepted) == 1
+    assert len(disputed) == 0
+
+    # Stable bofedal_id present and looks like a UUID5 string.
+    bid = accepted["bofedal_id"].iloc[0]
+    assert len(bid) == 36 and bid.count("-") == 4
+
+
+def test_build_mask_bofedal_id_deterministic(tiny_binary_raster, tmp_path):
+    from acquisition.bofedal_mask import BofedalMaskConfig, build_mask
+    import geopandas as gpd
+
+    accepted1 = tmp_path / "a1.geojson"
+    disputed1 = tmp_path / "d1.geojson"
+    accepted2 = tmp_path / "a2.geojson"
+    disputed2 = tmp_path / "d2.geojson"
+
+    cfg = BofedalMaskConfig(min_pixels=1, min_area_m2=0.0)
+    build_mask(tiny_binary_raster, tiny_binary_raster, accepted1, disputed1, cfg)
+    build_mask(tiny_binary_raster, tiny_binary_raster, accepted2, disputed2, cfg)
+
+    a1 = gpd.read_file(accepted1)
+    a2 = gpd.read_file(accepted2)
+    assert a1["bofedal_id"].iloc[0] == a2["bofedal_id"].iloc[0]

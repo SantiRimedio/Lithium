@@ -10,6 +10,8 @@ Output:
 """
 from __future__ import annotations
 
+import tempfile
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -25,6 +27,7 @@ from shapely.strtree import STRtree
 
 
 _METRIC_CRS = "EPSG:32719"  # UTM Zone 19S, covers Argentine Puna
+_BOFEDAL_NAMESPACE = uuid.UUID("00000000-0000-0000-0000-000000000001")
 
 
 @dataclass(frozen=True)
@@ -140,4 +143,67 @@ def reconcile(
         (out["overlap_with_reference"] >= dispute_threshold)
         & (out["overlap_with_reference"] < accept_threshold)
     ].copy()
+    return accepted, disputed
+
+
+def _assign_bofedal_ids(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    out = gdf.copy()
+    out["bofedal_id"] = [
+        str(uuid.uuid5(_BOFEDAL_NAMESPACE, geom.wkt))
+        for geom in out.geometry
+    ]
+    return out
+
+
+def _filter_min_area(gdf: gpd.GeoDataFrame, min_area_m2: float) -> gpd.GeoDataFrame:
+    if min_area_m2 <= 0 or len(gdf) == 0:
+        return gdf
+    metric = gdf.to_crs(_METRIC_CRS)
+    keep = metric.geometry.area >= min_area_m2
+    return gdf[keep].copy()
+
+
+def _prepare_polygons(
+    raster: Path, cfg: BofedalMaskConfig
+) -> gpd.GeoDataFrame:
+    """Run sieve → polygonize → aggregate_300m → min-area filter on one raster."""
+    with tempfile.TemporaryDirectory() as tmp:
+        sieved = Path(tmp) / "sieved.tif"
+        sieve_raster(raster, sieved, min_pixels=cfg.min_pixels)
+        gdf = polygonize(sieved)
+    if len(gdf) == 0:
+        return gdf
+    gdf = aggregate_300m(gdf, distance_m=cfg.aggregate_distance_m)
+    gdf = _filter_min_area(gdf, cfg.min_area_m2)
+    return gdf
+
+
+def build_mask(
+    primary_raster: Path,
+    reference_raster: Path,
+    accepted_out: Path,
+    disputed_out: Path,
+    config: BofedalMaskConfig | None = None,
+) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    """Run the full bofedal-mask pipeline and write both GeoJSONs.
+
+    Returns the (accepted, disputed) GeoDataFrames for convenience.
+    """
+    cfg = config or BofedalMaskConfig()
+
+    primary = _prepare_polygons(primary_raster, cfg)
+    reference = _prepare_polygons(reference_raster, cfg)
+
+    accepted, disputed = reconcile(
+        primary, reference,
+        accept_threshold=cfg.accept_threshold,
+        dispute_threshold=cfg.dispute_threshold,
+    )
+    accepted = _assign_bofedal_ids(accepted)
+    disputed = _assign_bofedal_ids(disputed)
+
+    accepted_out.parent.mkdir(parents=True, exist_ok=True)
+    disputed_out.parent.mkdir(parents=True, exist_ok=True)
+    accepted.to_file(accepted_out, driver="GeoJSON")
+    disputed.to_file(disputed_out, driver="GeoJSON")
     return accepted, disputed
