@@ -36,3 +36,24 @@ def test_sieve_raster_removes_small_components(tmp_path):
     # Small blob is gone; big blob remains.
     assert out_data[2:5, 2:5].sum() == 0
     assert out_data[10:15, 10:15].sum() == 25
+
+
+def test_polygonize_returns_geodataframe_in_4326(tiny_binary_raster):
+    from acquisition.bofedal_mask import polygonize
+
+    gdf = polygonize(tiny_binary_raster)
+    assert len(gdf) == 1
+    assert gdf.crs.to_epsg() == 4326
+    # The polygon should be inside the raster bounds.
+    minx, miny, maxx, maxy = gdf.total_bounds
+    assert minx >= -67.5 and maxx <= -66.5
+    assert miny >= -25.5 and maxy <= -24.5
+
+
+def test_polygonize_skips_zero_class(tiny_binary_raster):
+    """Only value==1 pixels become polygons (zero is background)."""
+    from acquisition.bofedal_mask import polygonize
+
+    gdf = polygonize(tiny_binary_raster)
+    # All polygons should have raster_value == 1.
+    assert (gdf["raster_value"] == 1).all()

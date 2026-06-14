@@ -13,8 +13,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+import geopandas as gpd
 import rasterio
-from rasterio.features import sieve
+from rasterio.features import shapes as rio_shapes, sieve
+from shapely.geometry import shape
 
 
 @dataclass(frozen=True)
@@ -34,3 +36,22 @@ def sieve_raster(src_path: Path, dst_path: Path, *, min_pixels: int) -> None:
         profile = src.profile.copy()
         with rasterio.open(dst_path, "w", **profile) as dst:
             dst.write(sieved, 1)
+
+
+def polygonize(raster_path: Path) -> gpd.GeoDataFrame:
+    """Vectorize a binary raster. Returns polygons for value==1 only."""
+    with rasterio.open(raster_path) as src:
+        data = src.read(1)
+        transform = src.transform
+        crs = src.crs
+
+    geoms = []
+    values = []
+    for geom_dict, value in rio_shapes(data, mask=(data == 1), transform=transform):
+        geoms.append(shape(geom_dict))
+        values.append(int(value))
+
+    return gpd.GeoDataFrame(
+        {"raster_value": values, "geometry": geoms},
+        crs=crs,
+    )
