@@ -78,3 +78,53 @@ decisions pending). See
 - **CONICET click-through download for `izquierdo`** — download manually,
   place at `Data/external/izquierdo/raw/izquierdo_hydroecosystems.zip`, and
   re-run the driver; it will detect the existing file and skip the fetch.
+
+## GEE-mediated acquisition (Stage 0.5)
+
+The `mapbiomas` dataset is GEE-mediated and needs Earth Engine auth.
+
+### First-time GEE setup
+
+```bash
+uv run python -c "import ee; ee.Authenticate()"
+```
+
+This opens a browser window for OAuth. The token is cached at
+`~/.config/earthengine/credentials` and shared with subsequent runs.
+Earth Engine project: `ee-nunezrimedio-tesina` (configured in
+`src/acquisition/datasets/mapbiomas.py`).
+
+### Running the MapBiomas acquisition
+
+```bash
+uv run python -m acquisition.run --only mapbiomas
+```
+
+This submits a GEE export job (server-side bofedal stability raster) to
+`gdrive:Lithium_v2/gee_exports/mapbiomas/`, polls until done, then
+`rclone copy`s the result into `Data/external/mapbiomas/raw/`. Expect
+~5 minutes for the GEE step on a typical bofedal raster (~tens of MB).
+
+### Building the bofedal mask
+
+After both MapBiomas and Zenodo wetland2026 have been acquired, build
+the final v2 bofedal polygon mask:
+
+```bash
+uv run python -m acquisition.run --build-mask
+```
+
+This runs the sieve → polygonize → aggregate-300m → reconcile pipeline
+and writes:
+
+- `Data/bofedales_v2.geojson` — accepted bofedal polygons (committed)
+- `Data/bofedales_v2_disputed.geojson` — polygons 10–50% reference
+  overlap, for hand-review (committed)
+
+Re-running with all inputs unchanged is idempotent.
+
+You can combine acquisition and mask-build in one invocation:
+
+```bash
+uv run python -m acquisition.run --only mapbiomas --build-mask
+```
