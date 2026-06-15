@@ -122,3 +122,32 @@ def test_run_build_mask_requires_inputs(tmp_path):
 
     with pytest.raises(FileNotFoundError, match="MapBiomas raster"):
         run_build_mask(external_root=tmp_path, repo_root=tmp_path / "_repo")
+
+
+def test_run_build_mask_auto_extracts_wetland_zip(mocker, tmp_path):
+    """If the zenodo zip is present and the puna tif is missing, the driver
+    invokes extract_puna_tif before bofedal_mask.build_mask."""
+    from acquisition.run import run_build_mask
+
+    # Pre-create the primary raster + the zenodo zip; do NOT create the puna tif.
+    primary = tmp_path / "mapbiomas" / "raw" / "bofedal_stable.tif"
+    primary.parent.mkdir(parents=True)
+    primary.touch()
+
+    zenodo_zip = tmp_path / "wetland2026" / "raw" / "wetland2026_high_probabilities.zip"
+    zenodo_zip.parent.mkdir(parents=True)
+    zenodo_zip.touch()
+
+    extract = mocker.patch(
+        "acquisition.datasets.wetland2026.Wetland2026Dataset.extract_puna_tif",
+        side_effect=lambda raw, dest: (
+            (dest / "puna").mkdir(parents=True, exist_ok=True) or
+            (dest / "puna" / "wetland_puna.tif").touch() or
+            (dest / "puna" / "wetland_puna.tif")
+        ),
+    )
+    mocker.patch("acquisition.bofedal_mask.build_mask")
+
+    run_build_mask(external_root=tmp_path, repo_root=tmp_path / "_repo")
+
+    extract.assert_called_once()

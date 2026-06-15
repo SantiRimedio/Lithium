@@ -69,15 +69,23 @@ class MapbiomasDataset:
             n_years_required=self.n_years_required,
         )
         region = _puna_region()
-        return export_to_drive(
+        export_to_drive(
             image=image,
             description=f"mapbiomas_stable_bofedal_{start_year}_{end_year}",
-            drive_folder="Lithium_v2/gee_exports/mapbiomas",
+            drive_folder="Lithium_v2_gee_exports_mapbiomas",
             file_prefix=f"bofedal_stable_{start_year}_{end_year}",
             region=region,
             local_dest=raw_dir,
             scale=30,
         )
+        tifs = sorted(raw_dir.glob("*.tif"))
+        if not tifs:
+            raise RuntimeError(
+                f"MapBiomas GEE export produced no .tif in {raw_dir}. "
+                "Check the GEE Tasks panel for task "
+                f"mapbiomas_stable_bofedal_{start_year}_{end_year}."
+            )
+        return tifs[0]
 
     def clip(self, raw_path: Path, dest: Path, aoi: BBox) -> Path | None:
         return None

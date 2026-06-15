@@ -7,9 +7,21 @@ from acquisition.datasets.mapbiomas import MapbiomasDataset
 
 def test_mapbiomas_fetch_initializes_and_exports(mocker, tmp_path):
     init = mocker.patch("acquisition.datasets.mapbiomas.initialize")
+
+    # Simulate export_to_drive landing a .tif in the raw dir, as the real
+    # rclone copy would.
+    raw_dir = tmp_path / "raw"
+    expected_tif = raw_dir / "bofedal_stable_1998_2024-0000.tif"
+
+    def fake_export(**kwargs):
+        local_dest = kwargs["local_dest"]
+        local_dest.mkdir(parents=True, exist_ok=True)
+        expected_tif.touch()
+        return local_dest
+
     export = mocker.patch(
         "acquisition.datasets.mapbiomas.export_to_drive",
-        return_value=tmp_path / "raw",
+        side_effect=fake_export,
     )
     # Stub the image-construction helper so we don't have to mock ee.* chains.
     image_stub = MagicMock(name="StableBofedalImage")
@@ -32,10 +44,10 @@ def test_mapbiomas_fetch_initializes_and_exports(mocker, tmp_path):
     kw = export.call_args.kwargs
     assert kw["image"] is image_stub
     assert kw["region"] is region_stub
-    assert kw["drive_folder"] == "Lithium_v2/gee_exports/mapbiomas"
+    assert kw["drive_folder"] == "Lithium_v2_gee_exports_mapbiomas"
     assert kw["file_prefix"].startswith("bofedal_stable_")
     assert kw["scale"] == 30
-    assert out == tmp_path / "raw"
+    assert out == expected_tif
 
 
 def test_mapbiomas_clip_returns_none(tmp_path):

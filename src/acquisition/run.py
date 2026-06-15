@@ -127,6 +127,14 @@ def run_build_mask(*, external_root: Path, repo_root: Path) -> None:
         )
     primary = primary_candidates[0]
 
+    # Ensure the Zenodo Puna TIF exists; extract it from the zip if needed.
+    zenodo_zip = external_root / "wetland2026" / "raw" / "wetland2026_high_probabilities.zip"
+    if zenodo_zip.exists():
+        from acquisition.datasets.wetland2026 import Wetland2026Dataset
+        Wetland2026Dataset(url="").extract_puna_tif(
+            zenodo_zip, external_root / "wetland2026"
+        )
+
     reference = external_root / "wetland2026" / "puna" / "wetland_puna.tif"
     if not reference.exists():
         raise FileNotFoundError(
