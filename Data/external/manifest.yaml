@@ -96,3 +96,23 @@
     spei12 entry). Place the file at Data/external/spei24/raw/spei24.nc and re-run.
 
     '
+- key: mapbiomas
+  title: "MapBiomas Argentina Coll. 2 — Puna y Altos Andes stable-bofedal raster"
+  url: ""
+  version: "Collection 2"
+  license: "CC-BY-SA 4.0 (per MapBiomas terms)"
+  clip_to_puna: false
+  sha256: ""
+  size_bytes: 0
+  doi: ""
+  handle: ""
+  notes: |
+    The `url` field is repurposed for the MapBiomas Coll. 2 image-collection
+    asset ID — find it on https://argentina.mapbiomas.org/ ATBD or the
+    MapBiomas-Argentina GitHub catalog and fill before first GEE run.
+    The acquisition runs server-side in GEE (project ee-nunezrimedio-tesina):
+    sums wetland-class years across 1998–2024, thresholds at 14 (≥50%),
+    clips to PUNA_BBOX, exports to gdrive:Lithium_v2/gee_exports/mapbiomas/.
+    Local mirror lands in Data/external/mapbiomas/raw/. Primary mask for
+    Methodology v2 §3.1 (replaces deprecated Izquierdo entry); polygonized
+    + reconciled against Zenodo 18339573 via `--build-mask`.
