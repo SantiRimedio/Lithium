@@ -1,13 +1,15 @@
-"""MapBiomas Argentina Collection 2 — bofedal-class GEE-mediated acquisition.
+"""MapBiomas Argentina Collection 1 — bofedal-class GEE-mediated acquisition.
 
 Builds a server-side image of "stable wetland" pixels (wetland class in
 ≥ n_years_required of the analysis window) and exports the Puna subset to
 Drive via `acquisition.gee.export_to_drive`.
 
-The `asset_id` is the MapBiomas Coll. 2 image collection ID; the
-`wetland_classes` tuple lists the class codes to treat as bofedal.
-Both are resolved at acquisition time from MapBiomas's catalog and pinned
-in the manifest's `mapbiomas` entry.
+The asset is a single ee.Image with one band per year
+(classification_1998 … classification_2022). The `asset_id` is the image
+asset path; `wetland_classes` tuple lists the class codes to treat as
+bofedal (class 11 = vegetación de humedal / vega per the Coll. 1 legend).
+Both are resolved at acquisition time and pinned in the manifest's
+`mapbiomas` entry.
 """
 from __future__ import annotations
 
@@ -27,18 +29,20 @@ def _build_stable_bofedal_image(
     end_year: int,
     n_years_required: int,
 ) -> "ee.Image":
-    """Server-side: sum wetland-class years per pixel, threshold at n_required."""
-    coll = ee.ImageCollection(asset_id).filter(
-        ee.Filter.calendarRange(start_year, end_year, "year")
-    )
+    """Server-side: sum wetland-class years per pixel, threshold at n_required.
 
-    def to_binary(img):
-        # Pixel == 1 if classification is in wetland_classes; else 0.
-        wetland_list = ee.List(list(wetland_classes))
-        return img.remap(wetland_list, ee.List.repeat(1, wetland_list.size()), 0)
-
-    binary = coll.map(to_binary)
-    n_years = binary.sum()
+    The asset is a single Image with one band per year
+    (classification_<YYYY>). Loops over years client-side to build a sum
+    of binary year masks; payload stays small (~25 band ops).
+    """
+    img = ee.Image(asset_id)
+    n_years = ee.Image(0)
+    for year in range(start_year, end_year + 1):
+        band = img.select(f"classification_{year}")
+        is_wetland = band.eq(wetland_classes[0])
+        for cls in wetland_classes[1:]:
+            is_wetland = is_wetland.Or(band.eq(cls))
+        n_years = n_years.add(is_wetland)
     return n_years.gte(n_years_required).rename("stable_bofedal")
 
 
@@ -53,12 +57,19 @@ class MapbiomasDataset:
     asset_id: str
     key: str = "mapbiomas"
     wetland_classes: tuple[int, ...] = (11,)
-    analysis_window: tuple[int, int] = (1998, 2024)
-    n_years_required: int = 14  # >= 50% of 27 years
+    # MapBiomas Argentina Coll. 1 covers 1998–2022 (25 years). Methodology v2
+    # §3.1 stability rule: wetland class in ≥ 50% of analytical years.
+    analysis_window: tuple[int, int] = (1998, 2022)
+    n_years_required: int = 13  # >= 50% of 25 years
     gee_project: str = "ee-nunezrimedio-tesina"
 
     def fetch(self, dest: Path) -> Path:
         raw_dir = dest / "raw"
+        raw_dir.mkdir(parents=True, exist_ok=True)
+        # Idempotent: skip the GEE round-trip if the export already mirrored.
+        existing = sorted(raw_dir.glob("*.tif"))
+        if existing:
+            return existing[0]
         start_year, end_year = self.analysis_window
         initialize(project=self.gee_project)
         image = _build_stable_bofedal_image(
