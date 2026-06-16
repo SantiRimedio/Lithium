@@ -4,7 +4,9 @@
 <meta charset="utf-8" />
 <title>Bofedales v2 — Argentine Puna</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-search@4.0.0/dist/leaflet-search.min.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-search@4.0.0/dist/leaflet-search.min.js"></script>
 <style>
   html, body, #map { height: 100%; margin: 0; padding: 0; }
   #legend {
@@ -58,8 +60,30 @@ function popup(f) {
 
 const basinsLayer = L.geoJSON(basins, {
   style: { color: '#555', weight: 1, fillOpacity: 0, dashArray: '3,3' },
-  interactive: false,
+  onEachFeature: (f, l) => l.bindTooltip(
+    f.properties.CUENCA || '(unnamed basin)',
+    { permanent: false, direction: 'top', sticky: true }
+  ),
 }).addTo(map);
+
+// Search by basin name (CUENCA). Zooms to the matching basin.
+const searchControl = new L.Control.Search({
+  layer: basinsLayer,
+  propertyName: 'CUENCA',
+  marker: false,
+  initial: false,
+  zoom: 10,
+  textPlaceholder: 'Search basin (e.g. Salinas Grandes)…',
+  moveToLocation: function(latlng, title, map) {
+    let target = null;
+    basinsLayer.eachLayer(l => {
+      if ((l.feature.properties.CUENCA || '') === title) target = l;
+    });
+    if (target) map.fitBounds(target.getBounds(), {padding: [40, 40]});
+    else map.setView(latlng, 10);
+  },
+});
+map.addControl(searchControl);
 
 const acceptedLayer = L.geoJSON(accepted, {
   style: { color: '#1b6e1b', weight: 1, fillColor: '#2ca02c', fillOpacity: 0.55 },
