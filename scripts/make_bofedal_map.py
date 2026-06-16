@@ -27,13 +27,15 @@ def _enrich(path: Path) -> dict:
 
 def main() -> None:
     accepted = _enrich(ACCEPTED)
-    disputed = _enrich(DISPUTED)
+    # Disputed is optional — produced only when --build-mask runs with
+    # reconcile=True. The MapBiomas-only default skips it.
+    disputed = _enrich(DISPUTED) if DISPUTED.exists() else {"type": "FeatureCollection", "features": []}
     basins = json.loads(gpd.read_file(BASINS).to_crs("EPSG:4326").to_json())
 
     n_a = len(accepted["features"])
     n_d = len(disputed["features"])
     area_a = sum(f["properties"]["area_m2"] for f in accepted["features"]) / 1e6
-    area_d = sum(f["properties"]["area_m2"] for f in disputed["features"]) / 1e6
+    area_d = sum(f["properties"]["area_m2"] for f in disputed["features"]) / 1e6 if n_d else 0.0
 
     html = f"""<!DOCTYPE html>
 <html>
@@ -64,9 +66,8 @@ def main() -> None:
 <div id="legend">
   <h4>Bofedales v2 — Argentine Puna</h4>
   <span class="sw" style="background:#2ca02c;opacity:.7"></span>
-  Accepted: <b>{n_a}</b> polygons, ~{area_a:.1f} km²<br>
-  <span class="sw" style="background:#ff7f0e;opacity:.7"></span>
-  Disputed: <b>{n_d}</b> polygons, ~{area_d:.1f} km²<br>
+  Bofedales: <b>{n_a:,}</b> polygons, ~{area_a:.1f} km²<br>
+  {"<span class='sw' style='background:#ff7f0e;opacity:.7'></span> Disputed: <b>%s</b> polygons, ~%.1f km²<br>" % (f"{n_d:,}", area_d) if n_d else ""}
   <span class="sw" style="background:transparent;border:1px solid #555"></span>
   Endorheic basins
 </div>

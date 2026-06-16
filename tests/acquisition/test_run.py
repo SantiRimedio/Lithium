@@ -101,6 +101,7 @@ def test_run_build_mask_invokes_pipeline(mocker, tmp_path):
     run_build_mask(
         external_root=tmp_path,
         repo_root=tmp_path / "_repo",
+        reconcile=True,
     )
 
     build.assert_called_once()
@@ -148,6 +149,6 @@ def test_run_build_mask_auto_extracts_wetland_zip(mocker, tmp_path):
     )
     mocker.patch("acquisition.bofedal_mask.build_mask")
 
-    run_build_mask(external_root=tmp_path, repo_root=tmp_path / "_repo")
+    run_build_mask(external_root=tmp_path, repo_root=tmp_path / "_repo", reconcile=True)
 
     extract.assert_called_once()

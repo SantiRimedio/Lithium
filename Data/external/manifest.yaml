@@ -105,22 +105,28 @@
   size_bytes: 2127628
   doi: ''
   handle: ''
-  notes: 'The `url` field is repurposed for the MapBiomas Coll. 2 image-collection
-
-    asset ID — find it on https://argentina.mapbiomas.org/ ATBD or the
-
-    MapBiomas-Argentina GitHub catalog and fill before first GEE run.
+  notes: |
+    The `url` field is repurposed as the MapBiomas Coll. 1 image asset ID
+    (Argentina has only Coll. 1 published as of 2026-06). The asset is a
+    single ee.Image with one band per year (classification_1998 …
+    classification_2022). Class 11 = vegetación de humedal / vega; the
+    pixel count matches Izquierdo 2015's reported ~94,000 ha within
+    rounding, confirming the class assignment.
 
     The acquisition runs server-side in GEE (project ee-nunezrimedio-tesina):
+    sums binary wetland masks across the analysis_window years, thresholds
+    at n_years_required (default ≥50% = 13 of 25), clips to PUNA_BBOX,
+    exports to gdrive:Lithium_v2_gee_exports_mapbiomas/. Local mirror
+    lands in Data/external/mapbiomas/raw/.
 
-    sums wetland-class years across 1998–2024, thresholds at 14 (≥50%),
+    METHODOLOGY DECISION (2026-06-16): Bofedales v2 is built from MapBiomas
+    alone — the planned Zenodo 18339573 cross-validation was dropped after
+    Stage 0.5 inspection showed the Zenodo "high probability" mask is
+    mechanically too conservative (~⅓ of MapBiomas's wetland pixel count)
+    and the area-weighted polygon overlap was systematically dropping real
+    bofedales into the "disputed" bucket or below the 10% threshold
+    entirely. MapBiomas Argentina Coll. 1 is Puna-tuned and matches
+    Izquierdo's totals; trust it directly. The reconcile path is still
+    exposed via `run_build_mask(reconcile=True)` for ad-hoc inspection.
+    Methodology v2 §3.1 needs a corresponding rewrite (follow-up).
 
-    clips to PUNA_BBOX, exports to gdrive:Lithium_v2/gee_exports/mapbiomas/.
-
-    Local mirror lands in Data/external/mapbiomas/raw/. Primary mask for
-
-    Methodology v2 §3.1 (replaces deprecated Izquierdo entry); polygonized
-
-    + reconciled against Zenodo 18339573 via `--build-mask`.
-
-    '

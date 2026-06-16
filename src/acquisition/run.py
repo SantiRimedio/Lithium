@@ -109,12 +109,22 @@ def run(
         print("manifest updated with new SHA/size — commit it", file=sys.stderr)
 
 
-def run_build_mask(*, external_root: Path, repo_root: Path) -> None:
-    """Run the polygonization + reconciliation step.
+def run_build_mask(
+    *, external_root: Path, repo_root: Path, reconcile: bool = False
+) -> None:
+    """Run the polygonization (and optional reconciliation) step.
 
-    Inputs: the latest MapBiomas raster (under external/mapbiomas/raw/) and
-    the Puna-extracted Zenodo TIF (under external/wetland2026/puna/).
-    Outputs: Data/bofedales_v2.geojson + Data/bofedales_v2_disputed.geojson.
+    By default ``reconcile=False``: trust MapBiomas as the bofedal mask
+    and skip the Zenodo cross-validation. Stage 0.5 inspection (2026-06)
+    showed the Zenodo high-probability mask is mechanically too
+    conservative — its base rate (~⅓ of MapBiomas's wetland pixels)
+    plus area-weighted overlap drove most real bofedales into the
+    "disputed" bucket instead of "accepted". MapBiomas Argentina Coll. 1
+    is Puna-tuned and matches Izquierdo's 2015 area total within
+    rounding; we adopt it as authoritative for now.
+
+    Set ``reconcile=True`` to re-enable the two-mask Zenodo overlap
+    classification (writes both accepted + disputed GeoJSONs).
     """
     from acquisition import bofedal_mask
 
@@ -127,7 +137,20 @@ def run_build_mask(*, external_root: Path, repo_root: Path) -> None:
         )
     primary = primary_candidates[0]
 
-    # Ensure the Zenodo Puna TIF exists; extract it from the zip if needed.
+    accepted_out = repo_root / "Data" / "bofedales_v2.geojson"
+    disputed_out = repo_root / "Data" / "bofedales_v2_disputed.geojson"
+
+    if not reconcile:
+        bofedal_mask.build_mask(
+            primary_raster=primary,
+            reference_raster=None,
+            accepted_out=accepted_out,
+            disputed_out=None,
+        )
+        print(f"wrote {accepted_out} (no reconciliation)", file=sys.stderr)
+        return
+
+    # Reconciliation path: ensure the Zenodo Puna TIF exists; extract from zip if needed.
     zenodo_zip = external_root / "wetland2026" / "raw" / "wetland2026_high_probabilities.zip"
     if zenodo_zip.exists():
         from acquisition.datasets.wetland2026 import Wetland2026Dataset
@@ -141,9 +164,6 @@ def run_build_mask(*, external_root: Path, repo_root: Path) -> None:
             f"Zenodo Puna TIF not found at {reference}. Call "
             "Wetland2026Dataset.extract_puna_tif first."
         )
-
-    accepted_out = repo_root / "Data" / "bofedales_v2.geojson"
-    disputed_out = repo_root / "Data" / "bofedales_v2_disputed.geojson"
 
     bofedal_mask.build_mask(
         primary_raster=primary,

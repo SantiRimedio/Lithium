@@ -180,30 +180,43 @@ def _prepare_polygons(
 
 def build_mask(
     primary_raster: Path,
-    reference_raster: Path,
+    reference_raster: Path | None,
     accepted_out: Path,
-    disputed_out: Path,
+    disputed_out: Path | None = None,
     config: BofedalMaskConfig | None = None,
 ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    """Run the full bofedal-mask pipeline and write both GeoJSONs.
+    """Run the bofedal-mask pipeline and write the GeoJSON(s).
+
+    If ``reference_raster`` is None, skip the two-mask reconciliation step
+    and treat the primary mask as authoritative (every primary polygon goes
+    to ``accepted_out``; an empty disputed frame is returned but not
+    written unless ``disputed_out`` is provided).
 
     Returns the (accepted, disputed) GeoDataFrames for convenience.
     """
     cfg = config or BofedalMaskConfig()
 
     primary = _prepare_polygons(primary_raster, cfg)
-    reference = _prepare_polygons(reference_raster, cfg)
 
-    accepted, disputed = reconcile(
-        primary, reference,
-        accept_threshold=cfg.accept_threshold,
-        dispute_threshold=cfg.dispute_threshold,
-    )
+    if reference_raster is None:
+        accepted = primary.copy()
+        accepted["overlap_with_reference"] = float("nan")
+        disputed = primary.iloc[0:0].copy()
+        disputed["overlap_with_reference"] = float("nan")
+    else:
+        reference = _prepare_polygons(reference_raster, cfg)
+        accepted, disputed = reconcile(
+            primary, reference,
+            accept_threshold=cfg.accept_threshold,
+            dispute_threshold=cfg.dispute_threshold,
+        )
+
     accepted = _assign_bofedal_ids(accepted)
     disputed = _assign_bofedal_ids(disputed)
 
     accepted_out.parent.mkdir(parents=True, exist_ok=True)
-    disputed_out.parent.mkdir(parents=True, exist_ok=True)
     accepted.to_file(accepted_out, driver="GeoJSON")
-    disputed.to_file(disputed_out, driver="GeoJSON")
+    if disputed_out is not None:
+        disputed_out.parent.mkdir(parents=True, exist_ok=True)
+        disputed.to_file(disputed_out, driver="GeoJSON")
     return accepted, disputed
