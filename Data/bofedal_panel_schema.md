@@ -7,12 +7,12 @@ One row per `(bofedal_id, year)`. Years 1998–2024 inclusive; 3,821 bofedales �
 | `bofedal_id` | string (UUID5) | Stable identifier from `Data/bofedales_v2.geojson` (Stage 0.5). |
 | `year` | int16 | Calendar year 1998–2024. |
 | `ndvi_gs_median` | float32 | Growing-season (Dec `y-1` – Feb `y`) per-pixel NDVI median, then polygon-mean. Landsat C2 SR. |
-| `ndvi_gs_n_obs` | Int16 | Count of Landsat scenes contributing to the growing-season composite. |
+| `ndvi_gs_n_obs` | Int16 | Count of valid (non-masked) pixels per bofedal in the growing-season median composite. ~polygon area ÷ 900 m². |
 | `ndvi_annual_median` | float32 | Calendar-year per-pixel NDVI median, then polygon-mean. Landsat C2 SR. |
-| `ndvi_annual_n_obs` | Int16 | Count of Landsat scenes contributing to the calendar-year composite. |
+| `ndvi_annual_n_obs` | Int16 | Count of valid pixels per bofedal in the calendar-year median composite. |
 | `s1_vv_db_median` | float32 | Sentinel-1 IW descending VV backscatter median (dB). NaN for years <2014. |
 | `s1_vh_db_median` | float32 | Sentinel-1 IW descending VH backscatter median (dB). NaN for years <2014. |
-| `s1_n_obs` | Int16 | Count of Sentinel-1 scenes contributing. 0 for years <2014. |
+| `s1_n_obs` | Int16 | Count of valid pixels per bofedal in the S1 VV median composite (VV and VH counts are identical given the same scene set). 0 for years <2014. |
 | `spei_12_gs_mean` | float32 | SPEI-12 growing-season mean from SPEIbase v2.11. |
 | `spei_24_gs_mean` | float32 | SPEI-24 growing-season mean from SPEIbase v2.11. |
 | `elevation_m` | float32 | SRTM 30 m mean elevation per bofedal. Constant across years. |

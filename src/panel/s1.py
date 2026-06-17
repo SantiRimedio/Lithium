@@ -1,8 +1,10 @@
 """Sentinel-1 GRD VV/VH backscatter median per (bofedal, year), in dB.
 
-Filters to IW mode + descending orbit + the requested polarization, converts
-amplitude to dB (10 * log10), takes the per-pixel median across the year,
-and reduces over the bofedal polygons.
+Filters to IW mode + descending orbit + the requested polarization, takes
+the per-pixel median across the year, and reduces over the bofedal polygons.
+The COPERNICUS/S1_GRD asset bands `VV` and `VH` are already in dB scale
+after GEE's standard preprocessing (thermal noise removal + radiometric
+calibration + terrain correction), so no explicit log10 step is needed.
 """
 from __future__ import annotations
 

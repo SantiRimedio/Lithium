@@ -99,6 +99,10 @@ def compose_panel(
     }
     df = df.astype({k: v for k, v in schema.items() if k in df.columns})
 
+    # Project to schema columns only — strips any extra columns leaking from
+    # GEE table exports (`.geo`, `system:index`) or wide intermediate CSVs.
+    df = df[[c for c in schema if c in df.columns]]
+
     out_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(out_path, engine="pyarrow", compression="snappy", index=False)
     return out_path

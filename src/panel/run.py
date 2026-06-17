@@ -30,15 +30,16 @@ def _load_usgs_salars(*, external_root: Path) -> gpd.GeoDataFrame:
             f"No .gdb directory found under {target}. Check the archive structure."
         )
     gdb = gdb_candidates[0]
-    import fiona
-    layers = fiona.listlayers(str(gdb))
+    import pyogrio
+    layer_info = pyogrio.list_layers(str(gdb))
+    layer_names = [name for name, _ in layer_info]
     salar_layer = next(
-        (l for l in layers if "salar" in l.lower()),
+        (name for name in layer_names if "salar" in name.lower()),
         None,
     )
     if salar_layer is None:
         raise RuntimeError(
-            f"No salar layer in {gdb}. Available: {layers}"
+            f"No salar layer in {gdb}. Available: {layer_names}"
         )
     return gpd.read_file(str(gdb), layer=salar_layer)
 
