@@ -49,15 +49,31 @@ def extract_elevation(*, bofedales, local_dest: Path) -> Path:
 
     initialize()
     image = ee.Image(_SRTM_ASSET)
-    fc = _bofedales_to_fc(bofedales)
-    table = _reduce_to_table(image, fc)
-    export_table_to_drive(
-        table=table,
-        description="elevation",
-        drive_folder="Lithium_v2_gee_exports_panel_elevation",
-        file_prefix="elevation",
-        local_dest=local_dest,
+    drive_folder = "Lithium_v2_gee_exports_panel_elevation"
+
+    from panel.ndvi import _chunks
+
+    for i, chunk in _chunks(bofedales):
+        fc = _bofedales_to_fc(chunk)
+        table = _reduce_to_table(image, fc)
+        export_table_to_drive(
+            table=table,
+            description=f"elevation_chunk_{i}",
+            drive_folder=drive_folder,
+            file_prefix=f"elevation_chunk_{i}",
+            local_dest=local_dest,
+            timeout_min=30,
+        )
+
+    import pandas as pd
+    chunk_csvs = sorted(local_dest.glob("elevation_chunk_*.csv"))
+    if not chunk_csvs:
+        raise RuntimeError(f"No elevation chunk CSVs landed in {local_dest}")
+    pd.concat([pd.read_csv(c) for c in chunk_csvs], ignore_index=True).to_csv(
+        out_csv, index=False
     )
+    for c in chunk_csvs:
+        c.unlink()
     return out_csv
 
 

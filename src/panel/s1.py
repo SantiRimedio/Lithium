@@ -52,7 +52,11 @@ def extract_year(
     polarization: str,
     local_dest: Path,
 ) -> Path:
-    """Submit a GEE export for one (year, polarization). Idempotent."""
+    """Submit a GEE export for one (year, polarization). Idempotent.
+
+    Bofedales are chunked into ~500-polygon batches to stay under GEE's
+    10 MB request payload limit; chunk CSVs are concatenated locally.
+    """
     if year < _S1_AVAILABLE_FROM:
         raise ValueError(
             f"Sentinel-1 GRD is not available before {_S1_AVAILABLE_FROM}; got {year}"
@@ -73,15 +77,23 @@ def extract_year(
         .filter(ee.Filter.listContains("transmitterReceiverPolarisation", polarization))
     )
     band = coll.select(polarization).median()
-    fc = _bofedales_to_fc(bofedales)
-    table = _reduce_to_table(band, fc)
 
     pol_lower = polarization.lower()
-    export_table_to_drive(
-        table=table,
-        description=f"s1_{pol_lower}_{year}",
-        drive_folder=f"Lithium_v2_gee_exports_panel_s1_{pol_lower}",
-        file_prefix=str(year),
-        local_dest=local_dest,
-    )
+    drive_folder = f"Lithium_v2_gee_exports_panel_s1_{pol_lower}"
+
+    from panel.ndvi import _chunks, _concat_chunk_csvs
+
+    for i, chunk in _chunks(bofedales):
+        fc = _bofedales_to_fc(chunk)
+        table = _reduce_to_table(band, fc)
+        export_table_to_drive(
+            table=table,
+            description=f"s1_{pol_lower}_{year}_chunk_{i}",
+            drive_folder=drive_folder,
+            file_prefix=f"{year}_chunk_{i}",
+            local_dest=local_dest,
+            timeout_min=30,
+        )
+
+    _concat_chunk_csvs(local_dest, year, out_csv)
     return out_csv

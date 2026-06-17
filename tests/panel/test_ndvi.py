@@ -68,17 +68,20 @@ def test_extract_year_skips_when_csv_exists(mocker, tmp_path):
     export.assert_not_called()
 
 
-def test_extract_year_submits_export_with_right_metadata(mocker, tmp_path):
-    """When the CSV is missing, submit a GEE export with the right metadata."""
+def test_extract_year_submits_export_with_right_metadata(mocker, tmp_path, tiny_bofedales):
+    """When the CSV is missing, submit GEE exports (one per chunk) with the right metadata."""
     from panel.ndvi import extract_year
 
     out_dir = tmp_path / "panel/ndvi_gs"
+    out_dir.mkdir(parents=True)
     mocker.patch("panel.ndvi.initialize")
     mocker.patch("panel.ndvi._puna_region")
     mocker.patch("panel.ndvi._landsat_collection_for_window")
     mocker.patch("panel.ndvi._compute_ndvi_image")
     mocker.patch("panel.ndvi._bofedales_to_fc")
     mocker.patch("panel.ndvi._reduce_to_table")
+    # Skip the concat step (no real CSVs land in this unit test).
+    mocker.patch("panel.ndvi._concat_chunk_csvs")
     export = mocker.patch(
         "panel.ndvi.export_table_to_drive",
         return_value=out_dir,
@@ -86,16 +89,18 @@ def test_extract_year_submits_export_with_right_metadata(mocker, tmp_path):
 
     extract_year(
         year=2020,
-        bofedales=mocker.MagicMock(name="bofedales_gdf"),
+        bofedales=tiny_bofedales,
         window="growing_season",
         local_dest=out_dir,
     )
 
-    export.assert_called_once()
-    kw = export.call_args.kwargs
-    assert kw["description"] == "ndvi_gs_2020"
+    # Chunked: one export per chunk. tiny_bofedales has 3 polys; with _N_CHUNKS=8
+    # the helper yields 3 single-polygon chunks.
+    assert export.call_count >= 1
+    kw = export.call_args_list[0].kwargs
+    assert kw["description"].startswith("ndvi_gs_2020_chunk_")
     assert kw["drive_folder"] == "Lithium_v2_gee_exports_panel_ndvi_gs"
-    assert kw["file_prefix"] == "2020"
+    assert kw["file_prefix"].startswith("2020_chunk_")
     assert kw["local_dest"] == out_dir
 
 

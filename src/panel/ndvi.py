@@ -124,6 +124,37 @@ def _reduce_to_table(
     return image.reduceRegions(collection=fc, reducer=reducer, scale=30)
 
 
+# Chunk size for export submission. GEE's API has a 10 MB payload limit;
+# inlining all 3,821 polygons in a single FC blows that ceiling (the
+# expression-tree serialization is ~6-10x the raw geometry size). Splitting
+# into 8 chunks keeps each per-chunk payload comfortably under the limit.
+_N_CHUNKS = 8
+
+
+def _chunks(gdf, n: int = _N_CHUNKS):
+    """Yield up to n approximately-equal slices of gdf."""
+    if len(gdf) == 0:
+        return
+    chunk_size = (len(gdf) + n - 1) // n
+    for i in range(n):
+        slice_ = gdf.iloc[i * chunk_size:(i + 1) * chunk_size]
+        if len(slice_) == 0:
+            return
+        yield i, slice_
+
+
+def _concat_chunk_csvs(local_dest: Path, year: int, out_csv: Path) -> None:
+    import pandas as pd
+    chunk_csvs = sorted(local_dest.glob(f"{year}_chunk_*.csv"))
+    if not chunk_csvs:
+        raise RuntimeError(f"No chunk CSVs landed for year {year} in {local_dest}")
+    pd.concat([pd.read_csv(c) for c in chunk_csvs], ignore_index=True).to_csv(
+        out_csv, index=False
+    )
+    for c in chunk_csvs:
+        c.unlink()
+
+
 def extract_year(
     *,
     year: int,
@@ -134,7 +165,9 @@ def extract_year(
     """Submit a GEE export for one (year, window). Idempotent.
 
     `bofedales` is a GeoDataFrame with columns `bofedal_id` and `geometry`.
-    `window` is `growing_season` or `annual`.
+    `window` is `growing_season` or `annual`. Bofedales are chunked into
+    ~500-polygon batches to stay under GEE's 10 MB request payload limit;
+    chunk CSVs are concatenated locally into a single `<year>.csv`.
     """
     out_csv = local_dest / f"{year}.csv"
     if out_csv.exists():
@@ -145,15 +178,21 @@ def extract_year(
     region = _puna_region()
     coll = _landsat_collection_for_window(start=start, end=end, region=region)
     ndvi_img = _compute_ndvi_image(coll)
-    fc = _bofedales_to_fc(bofedales)
-    table = _reduce_to_table(ndvi_img, fc)
 
     suffix = "gs" if window == "growing_season" else "annual"
-    export_table_to_drive(
-        table=table,
-        description=f"ndvi_{suffix}_{year}",
-        drive_folder=f"Lithium_v2_gee_exports_panel_ndvi_{suffix}",
-        file_prefix=str(year),
-        local_dest=local_dest,
-    )
+    drive_folder = f"Lithium_v2_gee_exports_panel_ndvi_{suffix}"
+
+    for i, chunk in _chunks(bofedales):
+        fc = _bofedales_to_fc(chunk)
+        table = _reduce_to_table(ndvi_img, fc)
+        export_table_to_drive(
+            table=table,
+            description=f"ndvi_{suffix}_{year}_chunk_{i}",
+            drive_folder=drive_folder,
+            file_prefix=f"{year}_chunk_{i}",
+            local_dest=local_dest,
+            timeout_min=30,
+        )
+
+    _concat_chunk_csvs(local_dest, year, out_csv)
     return out_csv

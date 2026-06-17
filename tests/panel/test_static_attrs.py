@@ -7,8 +7,8 @@ import geopandas as gpd
 import pytest
 
 
-def test_extract_elevation_submits_srtm_export(mocker, tmp_path):
-    """Elevation pulls SRTM mean per bofedal via reduceRegions."""
+def test_extract_elevation_submits_srtm_export(mocker, tmp_path, tiny_bofedales):
+    """Elevation pulls SRTM mean per bofedal via reduceRegions, chunked."""
     from panel.static_attrs import extract_elevation
 
     mocker.patch("panel.static_attrs.initialize")
@@ -16,16 +16,22 @@ def test_extract_elevation_submits_srtm_export(mocker, tmp_path):
     image_factory = mocker.patch("ee.Image", return_value=img_mock)
     mocker.patch("panel.static_attrs._bofedales_to_fc")
     mocker.patch("panel.static_attrs._reduce_to_table")
+    # Stub the post-export concat (no real CSVs land in this unit test).
+    import pandas as pd
+    mocker.patch("pandas.read_csv", return_value=pd.DataFrame({"bofedal_id": ["x"], "mean": [3800.0]}))
+    mocker.patch("pathlib.Path.glob", return_value=[tmp_path / "elevation_chunk_0.csv"])
+    mocker.patch("pathlib.Path.unlink")
+    mocker.patch("pandas.DataFrame.to_csv")
     export = mocker.patch(
         "panel.static_attrs.export_table_to_drive",
         return_value=tmp_path,
     )
 
-    extract_elevation(bofedales=mocker.MagicMock(), local_dest=tmp_path)
+    extract_elevation(bofedales=tiny_bofedales, local_dest=tmp_path)
 
     image_factory.assert_called_with("USGS/SRTMGL1_003")
-    kw = export.call_args.kwargs
-    assert kw["file_prefix"] == "elevation"
+    kw = export.call_args_list[0].kwargs
+    assert kw["file_prefix"].startswith("elevation_chunk_")
     assert kw["drive_folder"] == "Lithium_v2_gee_exports_panel_elevation"
 
 
