@@ -72,3 +72,51 @@ def export_to_drive(
         check=True,
     )
     return local_dest
+
+
+def export_table_to_drive(
+    *,
+    table: "ee.FeatureCollection",
+    description: str,
+    drive_folder: str,
+    file_prefix: str,
+    local_dest: Path,
+    timeout_min: int = 15,
+) -> Path:
+    """Submit a FeatureCollection -> CSV export, poll until done, mirror locally.
+
+    Parallels `export_to_drive` for images. Uses `Export.table.toDrive` with
+    CSV format. Returns `local_dest` after the rclone mirror.
+    """
+    task = ee.batch.Export.table.toDrive(
+        collection=table,
+        description=description,
+        folder=drive_folder,
+        fileNamePrefix=file_prefix,
+        fileFormat="CSV",
+    )
+    task.start()
+
+    deadline = time.monotonic() + (timeout_min * 60)
+    while True:
+        status = task.status()
+        state = status.get("state")
+        if state == "COMPLETED":
+            break
+        if state == "FAILED":
+            raise RuntimeError(
+                f"GEE table export {description!r} failed: "
+                f"{status.get('error_message', 'unknown error')}"
+            )
+        if time.monotonic() > deadline:
+            raise TimeoutError(
+                f"GEE table export {description!r} did not finish within {timeout_min} min"
+            )
+        time.sleep(_POLL_INTERVAL_S)
+
+    local_dest.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        ["rclone", "copy", f"gdrive:{drive_folder}", str(local_dest)],
+        check=True,
+    )
+    return local_dest
