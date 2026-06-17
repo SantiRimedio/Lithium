@@ -128,3 +128,52 @@ You can combine acquisition and mask-build in one invocation:
 ```bash
 uv run python -m acquisition.run --only mapbiomas --build-mask
 ```
+
+## Stage 3 panel build (`uv run python -m panel.run`)
+
+Builds `Data/bofedal_panel.parquet` (~5 MB, committed) — one row per (bofedal_id, year) with NDVI + Sentinel-1 + SPEI + static attrs. Schema documented at [`Data/bofedal_panel_schema.md`](../bofedal_panel_schema.md).
+
+### Setup
+
+GEE auth must be configured (same as Stage 0.5):
+
+```bash
+uv run python -c "import ee; ee.Authenticate()"
+```
+
+`rclone` must be configured with the `gdrive` remote.
+
+### Running
+
+End-to-end (~30–60 min for the full 1998–2024 sweep, dominated by GEE export wait times):
+
+```bash
+uv run python -m panel.run
+```
+
+Outcome-by-outcome (useful for incremental work):
+
+```bash
+uv run python -m panel.run --extract ndvi              # both windows, all years
+uv run python -m panel.run --extract s1                # VV + VH, 2014+
+uv run python -m panel.run --extract elevation         # SRTM mean per bofedal
+uv run python -m panel.run --compose                   # merge to parquet (local, seconds)
+```
+
+Restrict year range:
+
+```bash
+uv run python -m panel.run --extract ndvi --years 2020:2020
+```
+
+### Outputs
+
+- `Data/external/panel/<outcome>/<year>.csv` — gitignored GEE intermediates
+- `Data/external/usgs/extracted/` — gitignored USGS gdb unpack
+- `Data/bofedal_panel.parquet` — committed deliverable
+
+### Troubleshooting
+
+- **GEE export FAILED**: open https://code.earthengine.google.com/ → Tasks panel; inspect the task by description (`ndvi_gs_2020`, `s1_vv_2018`, etc.). Re-run the same `--extract` after fixing.
+- **`rclone failed: invalid_grant`**: `rclone config reconnect gdrive:` then re-run.
+- **Missing USGS extracted directory**: `python -c "from panel.static_attrs import unpack_usgs_archive; from pathlib import Path; unpack_usgs_archive(archive=Path('Data/external/usgs/raw/usgs.gdb.7z'), target_dir=Path('Data/external/usgs/extracted'))"`.
