@@ -20,8 +20,12 @@ def _read_year_csvs(
     """
     if not directory.exists():
         return pd.DataFrame(columns=["bofedal_id", "year", value_col_name, count_col_name])
+    import re
     parts = []
+    year_re = re.compile(r"^\d{4}$")
     for csv in sorted(directory.glob("*.csv")):
+        if not year_re.match(csv.stem):
+            continue
         year = int(csv.stem)
         df = pd.read_csv(csv)
         df = df.rename(columns={"median": value_col_name, "count": count_col_name})
@@ -85,12 +89,12 @@ def compose_panel(
         "bofedal_id": "string",
         "year": "int16",
         "ndvi_gs_median": "float32",
-        "ndvi_gs_n_obs": "Int16",
+        "ndvi_gs_n_obs": "Int32",
         "ndvi_annual_median": "float32",
-        "ndvi_annual_n_obs": "Int16",
+        "ndvi_annual_n_obs": "Int32",
         "s1_vv_db_median": "float32",
         "s1_vh_db_median": "float32",
-        "s1_n_obs": "Int16",
+        "s1_n_obs": "Int32",
         "spei_12_gs_mean": "float32",
         "spei_24_gs_mean": "float32",
         "elevation_m": "float32",

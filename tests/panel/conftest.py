@@ -58,7 +58,7 @@ def tiny_salars(tmp_path: Path) -> Path:
         "features": [
             {
                 "type": "Feature",
-                "properties": {"NAME": "Salar A"},
+                "properties": {"Name": "Salar A"},
                 "geometry": {
                     "type": "Polygon",
                     "coordinates": [[
@@ -69,7 +69,7 @@ def tiny_salars(tmp_path: Path) -> Path:
             },
             {
                 "type": "Feature",
-                "properties": {"NAME": "Salar B"},
+                "properties": {"Name": "Salar B"},
                 "geometry": {
                     "type": "Polygon",
                     "coordinates": [[

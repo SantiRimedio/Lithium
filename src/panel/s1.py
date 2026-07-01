@@ -92,7 +92,7 @@ def extract_year(
             drive_folder=drive_folder,
             file_prefix=f"{year}_chunk_{i}",
             local_dest=local_dest,
-            timeout_min=30,
+            timeout_min=60,
         )
 
     _concat_chunk_csvs(local_dest, year, out_csv)

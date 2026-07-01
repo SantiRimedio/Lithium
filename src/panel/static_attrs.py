@@ -104,6 +104,6 @@ def extract_containing_salar_from_layer(
             inter_area = bof.geometry.intersection(sal.geometry).area
             if inter_area > best_area:
                 best_area = inter_area
-                best_name = sal["NAME"]
+                best_name = sal["Name"]
         rows.append({"bofedal_id": bid, "containing_salar": best_name})
     return pd.DataFrame(rows)

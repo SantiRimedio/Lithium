@@ -16,6 +16,23 @@ _HIGHVOL_URL = "https://earthengine-highvolume.googleapis.com"
 _POLL_INTERVAL_S = 30.0
 
 
+def _poll_status(task, description: str):
+    """task.status() with retries on transient network errors."""
+    for attempt in range(5):
+        try:
+            return task.status()
+        except Exception as e:
+            if attempt == 4:
+                raise
+            wait = 30 * (2 ** attempt)
+            print(
+                f"[gee] transient error polling {description!r} (attempt {attempt + 1}/5): "
+                f"{type(e).__name__}: {e}; retrying in {wait}s",
+                flush=True,
+            )
+            time.sleep(wait)
+
+
 def initialize(project: str = "ee-nunezrimedio-tesina") -> None:
     """Authenticate (browser flow first time, cached after) and initialize EE."""
     ee.Authenticate()
@@ -51,7 +68,7 @@ def export_to_drive(
 
     deadline = time.monotonic() + (timeout_min * 60)
     while True:
-        status = task.status()
+        status = _poll_status(task, description)
         state = status.get("state")
         if state == "COMPLETED":
             break
@@ -67,10 +84,7 @@ def export_to_drive(
         time.sleep(_POLL_INTERVAL_S)
 
     local_dest.mkdir(parents=True, exist_ok=True)
-    subprocess.run(
-        ["rclone", "copy", f"gdrive:{drive_folder}", str(local_dest)],
-        check=True,
-    )
+    _rclone_copy_with_retry(drive_folder, local_dest)
     return local_dest
 
 
@@ -99,7 +113,7 @@ def export_table_to_drive(
 
     deadline = time.monotonic() + (timeout_min * 60)
     while True:
-        status = task.status()
+        status = _poll_status(task, description)
         state = status.get("state")
         if state == "COMPLETED":
             break
@@ -115,8 +129,26 @@ def export_table_to_drive(
         time.sleep(_POLL_INTERVAL_S)
 
     local_dest.mkdir(parents=True, exist_ok=True)
-    subprocess.run(
-        ["rclone", "copy", f"gdrive:{drive_folder}", str(local_dest)],
-        check=True,
-    )
+    _rclone_copy_with_retry(drive_folder, local_dest)
     return local_dest
+
+
+def _rclone_copy_with_retry(drive_folder: str, local_dest: Path) -> None:
+    """rclone copy with retries on transient failures (network/OAuth blips)."""
+    for attempt in range(5):
+        try:
+            subprocess.run(
+                ["rclone", "copy", f"gdrive:{drive_folder}", str(local_dest)],
+                check=True,
+            )
+            return
+        except subprocess.CalledProcessError as e:
+            if attempt == 4:
+                raise
+            wait = 30 * (2 ** attempt)
+            print(
+                f"[gee] rclone copy {drive_folder!r} failed (attempt {attempt + 1}/5); "
+                f"retrying in {wait}s",
+                flush=True,
+            )
+            time.sleep(wait)
