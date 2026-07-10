@@ -78,3 +78,102 @@ decisions pending). See
 - **CONICET click-through download for `izquierdo`** — download manually,
   place at `Data/external/izquierdo/raw/izquierdo_hydroecosystems.zip`, and
   re-run the driver; it will detect the existing file and skip the fetch.
+
+## GEE-mediated acquisition (Stage 0.5)
+
+The `mapbiomas` dataset is GEE-mediated and needs Earth Engine auth.
+
+### First-time GEE setup
+
+```bash
+uv run python -c "import ee; ee.Authenticate()"
+```
+
+This opens a browser window for OAuth. The token is cached at
+`~/.config/earthengine/credentials` and shared with subsequent runs.
+Earth Engine project: `ee-nunezrimedio-tesina` (configured in
+`src/acquisition/datasets/mapbiomas.py`).
+
+### Running the MapBiomas acquisition
+
+```bash
+uv run python -m acquisition.run --only mapbiomas
+```
+
+This submits a GEE export job (server-side bofedal stability raster) to
+`gdrive:Lithium_v2/gee_exports/mapbiomas/`, polls until done, then
+`rclone copy`s the result into `Data/external/mapbiomas/raw/`. Expect
+~5 minutes for the GEE step on a typical bofedal raster (~tens of MB).
+
+### Building the bofedal mask
+
+After both MapBiomas and Zenodo wetland2026 have been acquired, build
+the final v2 bofedal polygon mask:
+
+```bash
+uv run python -m acquisition.run --build-mask
+```
+
+This runs the sieve → polygonize → aggregate-300m → reconcile pipeline
+and writes:
+
+- `Data/bofedales_v2.geojson` — accepted bofedal polygons (committed)
+- `Data/bofedales_v2_disputed.geojson` — polygons 10–50% reference
+  overlap, for hand-review (committed)
+
+Re-running with all inputs unchanged is idempotent.
+
+You can combine acquisition and mask-build in one invocation:
+
+```bash
+uv run python -m acquisition.run --only mapbiomas --build-mask
+```
+
+## Stage 3 panel build (`uv run python -m panel.run`)
+
+Builds `Data/bofedal_panel.parquet` (~5 MB, committed) — one row per (bofedal_id, year) with NDVI + Sentinel-1 + SPEI + static attrs. Schema documented at [`Data/bofedal_panel_schema.md`](../bofedal_panel_schema.md).
+
+### Setup
+
+GEE auth must be configured (same as Stage 0.5):
+
+```bash
+uv run python -c "import ee; ee.Authenticate()"
+```
+
+`rclone` must be configured with the `gdrive` remote.
+
+### Running
+
+End-to-end (~30–60 min for the full 1998–2024 sweep, dominated by GEE export wait times):
+
+```bash
+uv run python -m panel.run
+```
+
+Outcome-by-outcome (useful for incremental work):
+
+```bash
+uv run python -m panel.run --extract ndvi              # both windows, all years
+uv run python -m panel.run --extract s1                # VV + VH, 2014+
+uv run python -m panel.run --extract elevation         # SRTM mean per bofedal
+uv run python -m panel.run --compose                   # merge to parquet (local, seconds)
+```
+
+Restrict year range:
+
+```bash
+uv run python -m panel.run --extract ndvi --years 2020:2020
+```
+
+### Outputs
+
+- `Data/external/panel/<outcome>/<year>.csv` — gitignored GEE intermediates
+- `Data/external/usgs/extracted/` — gitignored USGS gdb unpack
+- `Data/bofedal_panel.parquet` — committed deliverable
+
+### Troubleshooting
+
+- **GEE export FAILED**: open https://code.earthengine.google.com/ → Tasks panel; inspect the task by description (`ndvi_gs_2020`, `s1_vv_2018`, etc.). Re-run the same `--extract` after fixing.
+- **`rclone failed: invalid_grant`**: `rclone config reconnect gdrive:` then re-run.
+- **Missing USGS extracted directory**: `python -c "from panel.static_attrs import unpack_usgs_archive; from pathlib import Path; unpack_usgs_archive(archive=Path('Data/external/usgs/raw/usgs.gdb.7z'), target_dir=Path('Data/external/usgs/extracted'))"`.

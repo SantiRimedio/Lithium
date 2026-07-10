@@ -27,18 +27,17 @@
   size_bytes: 0
   doi: 10.1007/s11273-015-9433-3
   handle: 11336/58267
-  notes: 'DEPRECATED 2026-06-05. The 2015 Wetlands Ecology & Mgmt paper has no
-    data-availability section, the CONICET handle 11336/58267 is unreliable, and
-    the corresponding author did not respond to a data request. The bofedal-mask
-    role originally assigned to Izquierdo in Methodology v2 §3.1 is reassigned
-    to a HYBRID: MapBiomas Argentina Coll. 2 (Puna y Altos Andes) wetland class
-    as primary, polygonized via the Izquierdo-style sieve+clump+aggregate-300m
-    post-process; Zenodo 18339573 high-probability mask as cross-validation.
-    MapBiomas acquisition (GEE-mediated) is scope for the next implementation
-    pass and pulls tier-2 GEE infrastructure work forward. Methodology v2 §3.1
-    text needs a corresponding rewrite (track in a follow-up spec commit).
-    Entry retained for historical traceability; the IzquierdoDataset module and
-    its tests remain in the codebase pending a cleanup pass.
+  notes: 'DEPRECATED 2026-06-05. The 2015 Wetlands Ecology & Mgmt paper has no data-availability
+    section, the CONICET handle 11336/58267 is unreliable, and the corresponding author
+    did not respond to a data request. The bofedal-mask role originally assigned to
+    Izquierdo in Methodology v2 §3.1 is reassigned to a HYBRID: MapBiomas Argentina
+    Coll. 2 (Puna y Altos Andes) wetland class as primary, polygonized via the Izquierdo-style
+    sieve+clump+aggregate-300m post-process; Zenodo 18339573 high-probability mask
+    as cross-validation. MapBiomas acquisition (GEE-mediated) is scope for the next
+    implementation pass and pulls tier-2 GEE infrastructure work forward. Methodology
+    v2 §3.1 text needs a corresponding rewrite (track in a follow-up spec commit).
+    Entry retained for historical traceability; the IzquierdoDataset module and its
+    tests remain in the codebase pending a cleanup pass.
 
     '
 - key: wetland2026
@@ -96,3 +95,38 @@
     spei12 entry). Place the file at Data/external/spei24/raw/spei24.nc and re-run.
 
     '
+- key: mapbiomas
+  title: MapBiomas Argentina Coll. 1 — Puna stable-bofedal raster (class 11)
+  url: projects/mapbiomas-public/assets/argentina/collection1/mapbiomas_argentina_collection1_integration_v1
+  version: Collection 1 v1 (1998-2022, only Coll. 1 published as of 2026-06)
+  license: CC-BY-SA 4.0 (per MapBiomas terms)
+  clip_to_puna: false
+  sha256: dfd6aa6e8190dfe51c6cff213efe5274dfe5070d534eb51e4713635035954795
+  size_bytes: 2127628
+  doi: ''
+  handle: ''
+  notes: |
+    The `url` field is repurposed as the MapBiomas Coll. 1 image asset ID
+    (Argentina has only Coll. 1 published as of 2026-06). The asset is a
+    single ee.Image with one band per year (classification_1998 …
+    classification_2022). Class 11 = vegetación de humedal / vega; the
+    pixel count matches Izquierdo 2015's reported ~94,000 ha within
+    rounding, confirming the class assignment.
+
+    The acquisition runs server-side in GEE (project ee-nunezrimedio-tesina):
+    sums binary wetland masks across the analysis_window years, thresholds
+    at n_years_required (default ≥50% = 13 of 25), clips to PUNA_BBOX,
+    exports to gdrive:Lithium_v2_gee_exports_mapbiomas/. Local mirror
+    lands in Data/external/mapbiomas/raw/.
+
+    METHODOLOGY DECISION (2026-06-16): Bofedales v2 is built from MapBiomas
+    alone — the planned Zenodo 18339573 cross-validation was dropped after
+    Stage 0.5 inspection showed the Zenodo "high probability" mask is
+    mechanically too conservative (~⅓ of MapBiomas's wetland pixel count)
+    and the area-weighted polygon overlap was systematically dropping real
+    bofedales into the "disputed" bucket or below the 10% threshold
+    entirely. MapBiomas Argentina Coll. 1 is Puna-tuned and matches
+    Izquierdo's totals; trust it directly. The reconcile path is still
+    exposed via `run_build_mask(reconcile=True)` for ad-hoc inspection.
+    Methodology v2 §3.1 needs a corresponding rewrite (follow-up).
+

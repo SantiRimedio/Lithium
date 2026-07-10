@@ -27,3 +27,9 @@ __pycache__/
 Data/external/*/
 !Data/external/README.md
 !Data/external/manifest.yaml
+
+# Stage 3 panel — GEE intermediate CSVs (regenerable, committed via SHA in manifest)
+Data/external/panel/*/
+
+# Stage 3 panel — USGS gdb extraction (regenerable from the .7z)
+Data/external/usgs/extracted/

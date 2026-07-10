@@ -1,7 +1,9 @@
 """Shared fixtures: tiny GeoTIFF, NetCDF, and GeoJSON used by dataset tests."""
 from __future__ import annotations
 
+import io
 import json
+import zipfile
 from pathlib import Path
 
 import numpy as np
@@ -75,4 +77,51 @@ def tiny_geojson(tmp_path: Path) -> Path:
         ],
     }
     path.write_text(json.dumps(fc))
+    return path
+
+
+@pytest.fixture
+def tiny_zip_with_tifs(tmp_path: Path) -> Path:
+    """A zip containing two tiny GeoTIFFs: one overlapping PUNA_BBOX, one outside."""
+    path = tmp_path / "wetland_maps.zip"
+
+    def make_tif_bytes(west, south, east, north) -> bytes:
+        buf = io.BytesIO()
+        height, width = 10, 10
+        data = np.ones((height, width), dtype=np.uint8)
+        transform = from_bounds(west, south, east, north, width, height)
+        with rasterio.open(
+            buf, "w", driver="GTiff",
+            height=height, width=width, count=1,
+            dtype="uint8", crs="EPSG:4326", transform=transform,
+        ) as dst:
+            dst.write(data, 1)
+        return buf.getvalue()
+
+    with zipfile.ZipFile(path, "w") as zf:
+        # Puna-overlapping (-67, -25 area)
+        zf.writestr("inside.tif", make_tif_bytes(-67.5, -25.5, -66.5, -24.5))
+        # Far outside Puna (Brazil-ish)
+        zf.writestr("outside.tif", make_tif_bytes(-50.0, -10.0, -49.0, -9.0))
+    return path
+
+
+@pytest.fixture
+def tiny_binary_raster(tmp_path: Path) -> Path:
+    """A small EPSG:4326 binary raster with a 3x3 wetland blob in the Puna bbox.
+
+    Bounds: west=-67.5, south=-25.5, east=-66.5, north=-24.5 (well inside PUNA_BBOX).
+    """
+    path = tmp_path / "binary.tif"
+    height, width = 20, 20
+    data = np.zeros((height, width), dtype=np.uint8)
+    # Single 3x3 blob centered at (10, 10).
+    data[9:12, 9:12] = 1
+    transform = from_bounds(-67.5, -25.5, -66.5, -24.5, width, height)
+    with rasterio.open(
+        path, "w", driver="GTiff",
+        height=height, width=width, count=1,
+        dtype="uint8", crs="EPSG:4326", transform=transform,
+    ) as dst:
+        dst.write(data, 1)
     return path
