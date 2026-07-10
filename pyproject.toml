@@ -24,6 +24,15 @@ dev = [
     "pytest>=8.0",
     "pytest-mock>=3.12",
 ]
+notebook = [
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    "statsmodels>=0.14",
+    "jupyterlab>=4.0",
+    "nbclient>=0.10",
+    "nbconvert>=7.0",
+    "ipykernel>=6.29",
+]
 
 [build-system]
 requires = ["hatchling"]
